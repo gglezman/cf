@@ -1,0 +1,866 @@
+#
+# Author: Greg Glezman
+#
+# SCCSID : "%W%/t%G%
+#
+# Copyright (c) 2018 G.Glezman.  All Rights Reserved.
+#
+
+Unit test runs w/o error
+------------------------
+python3 -m unittest test_cf.py
+
+
+Real Data
+---------
+python3 cf.py
+ - use gglezman.dat
+ - result: good data in text window
+
+
+Group 1 - Startup and Cash Accounts
+Test: New data File
+Test: Add CA
+Test: Add Multipl CAs
+------
+ACTION - 
+    Fire up the GUI
+    File / New Data file
+        test33
+    Add/Edit Cash Account
+        New
+            Brokerage
+            12345
+            beg of month
+            1000
+            12
+            end of month
+            monthly
+        ADD
+VERIFY
+    Account shows up in Cash Accounts list
+    UPDATE Button
+VERIFY
+     Brokerage is in the accounts list and select it
+ACTION
+    Add/Edit Cash Account
+        New
+            Brokerage 2
+            67890
+            beg of month
+            1000
+            12
+            end of month
+            monthly
+         ADD
+         Update
+     DO NOT EXIT
+     File / New Data File
+         test34 / Save
+VERIY
+     Account list is empty
+     status bar shows the new file name
+     Text button will not crash
+
+     Exit GUI
+
+Test: Empty new data file
+Test: Add CA
+------
+ACTION
+    Fire up the gui
+    File / New Data File
+        test35
+    File / exit
+     ---------
+    Fire up the Gui
+    File / Open data file
+        test35
+    Add/Edit Cash Account
+        New
+           Brokerage
+           123
+           beg of month
+           1000
+           12
+           end of month
+           monthly
+        ADD
+ VERIFY
+    Account shows up in Cash Accounts list
+    Update Button
+    Account now in account Frame
+
+Group 2 - Bonds 
+Test: Window management in Account Edit - minimize / reopen
+
+ACTION
+    Open a substantial data file 
+    Open the Edit  / bond page
+    Open the Actions menu on a bond
+    Minimize the Edit Bonds window
+    Reopen the Add/Edit menu
+VERIFY
+    LINUX - the Actions menu should close and open along with the
+            Add/Edit window. You should be able to close/open more
+            Actions menus on the Add/Edit window
+    WINDOWS - the Actions menu will not close with the Edit Bonds window
+            Even worse, it gets pushed to the back of the stack and
+            must be closed manually
+
+Test: Window management in Account Edit - subordinate windows
+
+ACTION
+    Open the Add/Edit Bond page
+    Select "New" and open both datepickers
+    Leave all open
+    Select "New" again and open both datepickers
+    Leave all open
+VERIFY
+    You can only open one date picker per date box
+ACTION
+    Open datepickers for 2 bonds / Settlements date
+    Open datepickers for 2 bonds / Maturity date date
+    Leave all open
+VERIFY
+    You can only open one date picker per date box
+ACTION
+    Click on the bond call checkbutton for a bond
+    Open a datepicker for the call Date
+    Leave all open
+VERIFY
+    You can only open one date picker for the call date
+ACTION
+    Right click to open a menu on a bond
+    Leave the menu open
+    Hit "Cancel" on the Bond Page
+VERIFY
+    All subordinate windows close   
+
+Test: Bond Delete/Undelete - no actual delete
+
+SETUP
+    Open a test file with lots of stuff (gglezman.dat)
+    Open the Add/Edit bond page
+ACTION
+    Test Delete/Undelete
+       Mark a bond as deleted (on item menu) - verify correct item !
+       Undelete the item
+       update
+VERIFY
+    Open the bond page and verify the delete did NOT happen
+    
+SETUP
+    Scroll forward on the bond page
+ACTION
+    Test Delete/Undelete
+       Mark a bond as deleted (on item menu) - verify correct item !
+       Scroll fwd / scroll backward
+       Undelete the item
+       update
+VERIFY
+    Open the bond page and verify the delete did NOT happen
+
+Test: Bad data in a bond field: New
+
+ACTION
+     Depress the New button  then
+     Add to add empty bond
+VERIFY
+     New bond is on top of list (account name is blank)
+ACTION
+     Update - error - CUSIP NG: fix
+     Update - error - Account name NG: fix with Cap One (keep top of list)
+     Update - error - Purchase Price NG: fix
+     Update - error - Quantity NG: fix
+     Update - error - Coupon NG: fix
+     Update - error - maturity date NG: fix
+     Update - error - Compound NG: fix
+     Upate
+Verify
+     Bond on list, sorted by account then maturity date
+     
+ACTION
+     Depress the New button, Pension Account; then Add
+VERIFY
+     New bond is on the list properly sorted by account and date
+ACTION
+     Update - error - CUSIP NG: fix
+     Update - error - Purchase Price NG: fix
+     Update - error - Quantity NG: fix
+     Update - error - Coupon NG: fix
+     Update - error - Settlement date NG: fix
+     Update - error - Compound NG: fix
+     Upate
+Verify
+     Bond on list, sorted by account / maturity date
+
+Test: Bad data in a bond field: Existing entry
+ACTION
+    Set Bond price to 49
+    Update button
+VERIFY
+    Error msg - Bond price out of range
+
+ACTION
+    Set Bond price to blank
+    Update button
+VERIFY
+    Error msg - Bond price out of range
+    
+ACTION
+    Set Quantity to Blank - Verify error
+    Set Quantity to 0 - Verify error msg
+    Set Quantity to neg number - verify error msg
+VERIFY
+
+ACTION
+    Set Coupon blank - verify error msg
+    Set Coupon negative - verify error msg
+VERIFY
+
+ACTION
+    Set fee to a negative number - verify error msg
+ACTION
+    Set fee to 0 - verify no error
+VERIFY
+
+ACTION
+    Set settlement date to same date as maturity date
+VERIFY
+    Verify error msg
+ACTION
+    Set settlement date to after maturity date
+VERIFY
+    Verify erro msg
+
+Test: Bond Add with update
+SETUP
+    Open the Add/Edit bond page
+    From page 1 in the bonds listing
+ACTION     
+    Test Bond Add - New
+       Add a bond - find it in the account display       
+       Update
+VERIFY
+    Re-open the Bond page
+    The bond got added
+    Sort is correct based on default sort (account/maturity date)
+    Bond purchase, interest and sale got added to account
+ACTION     
+    Test a second Bond Add - New 
+       Add a bond - find it in the account display       
+       update
+VERIFY
+    The second bond got added
+    Sort is correct based on default sort (account/maturity date)
+    Bond purchase, interest and sale got added to account
+
+Test: Bond Delete with update
+
+ACTION     
+    Open the Add/Edit bond page
+    Test Bond Delete
+       Delete a bond
+       update
+VERIFY
+    The bond got deleted
+
+Test: Bond Modification
+ACTION
+    Open the Add/Edit bond page
+    Choice a bond in the middle of the page and change its
+      maturity date such that it swaps with the next
+    Update
+VERIFY
+    The modified date was recorded and the order swapped
+ACTION
+    Change a bond price / Update / Verify
+    Change a bond account / Update / Verify
+    Change a bond coupon / Update / Verify
+
+Test: Bond Modification - Cancel
+ACTION
+    Open the Add/Edit bond page
+    Choice a bond in the middle of the page and change its
+      maturity date such that it swaps with the next
+    Cancel
+VERIFY
+    The modification was discarded.
+ACTION
+    Change a bond price / Cancel / Verify
+    Change a bond account / Cancel / Verify
+    Change a bond coupon / Cancel / Verify
+
+Test: Test Bond sorting
+
+ACTION
+    Open the Add/Edit bond page
+VERIFY
+    Verify sort by account/Maturity Date
+ACTION
+    Sort by Maturity Date
+VERIFY
+    All entries sorted by Maturity Date
+ACTION
+    Sort by Price
+VERIFY
+    All entries sorted by Price
+ACTION
+    Sort by Coupon
+VERIFY
+    All entries sorted by Coupon
+    
+Test: Bond Call: Cancel
+SETUP
+    Open the Bond page
+ACTION
+    Click "call" for a bond 1 NOT currently called
+    Click "call" for a bond 2 NOT currently called
+    Click "call" for a bond 3 NOT currently called
+    Cancel all three
+    Update
+VERIFY
+    Reopen bond page
+    No change to checkbutton
+ACTION
+    Click "call" for a bond NOT currently called
+    Change the call date, make it INVALID (ie beyond maturity date)
+    Cancel 
+    Update
+VERIFY
+    Reopen bond page
+    No change to checkbutton
+
+Test: Bond Call: Accept
+SETUP
+    Open the Bond page
+ACTION
+    Click "call" for a bond NOT currently called
+    Enter valid date (before maturity but after settlement)
+    Enter a valid price
+    Accept the call
+VERIFY
+    The checkbutton is checked
+    Open a menu on the bond and select Bond Cash Flow Details and review
+
+ACTION
+    Open a menu on a bond and select Bond Call
+           ---------------
+    Enter valid date (before maturity but after settlement)
+    Enter a valid price
+    Accept the call
+VERIFY
+    The checkbutton is checked
+    Open a menu on the bond and select Bond Cash Flow Details and review
+
+ACTION
+    Update
+    Open the bond page
+VERIFY
+    The calls are still in place
+
+Test: Bond Call: Cancel Call
+SETUP
+    Open the Bond Page
+ACTION
+    Click Call on one of the bonds called in the previous test
+    Click Cancel Call
+VERIFY
+    The checkbutton is no longer checked
+    The Bond Cash Flows Details show maturity
+
+Test: Bond Call: Bad Call Date 
+SETUP
+    Open the Bond page
+ACTION
+    Click "call" for a bond NOT currently called
+    Change the call date to after the maturity date
+    Enter a valid price for the bond
+    Accept
+    Update
+VERIFY
+    Proper Error message: "Call Date must be before Maturity date"
+    Cancel the call
+ACTION
+    Click "call" for a bond NOT currently called
+    Change the call date to before the settlement date
+    Enter a valid price for the bond
+    Accept
+    Update
+VERIFY
+    Proper Error message: "Call date must be after Settlement Date"
+    Cancel the call
+
+ACTION
+    Click "call" for a bond NOT currently called
+    Leave the date (current date) and price (0.0) as is
+    Accept
+VERIFY
+    Proper Error message - "Redemption Price" required
+    Cancel the call
+
+Group 3 - CDs 
+Test: Test CD Delete/Undelete - no actual delete
+
+ACTION
+    Open the Add/Edit CD page
+    Test Delete/Undelete
+       Mark a CD as deleted (on item menu)
+       Undelete the item
+       update
+VERIFY
+    Open the CD page and verify the delete did NOT happen
+
+Test: CD Record Validation
+ACTION
+VERIFY
+
+Test: Test CD Add with update
+
+ACTION     
+    Open the Add/Edit CD page
+    Test CD Add
+       Add a CD New
+       update
+VERIFY
+    The CD got added
+    Sort is correct based on default sort (account/maturity date)
+    CD purchase, interest and sale got added to account
+    Open a menu on the item and examine the Cash Flow Details - not working yet
+
+Test: Test CD Delete with update
+
+ACTION     
+    Open the Add/Edit CD page
+    Test CD Delete
+       Delete a CD
+       update
+VERIFY
+    The CD got deleted
+
+Group 4: Cash Accounts
+Test: Test CA Delete/Undelete - no actual delete
+
+ACTION
+    Open the Add/Edit Cash Account page
+    Test Delete/Undelete
+       Mark an account as deleted (on item menu)
+       Undelete the item
+       update
+VERIFY
+    Open the Cash Accounts page and verify the delete did NOT happen
+    Sort is correct based on default sort (account/maturity date)
+
+Test: Test CA Entry Validation
+
+ACTION
+    Open the Add/Edit Cash Account page
+    New with no data entered into record
+    Add
+    Update
+
+VERIFY
+    Verify "Account Name" error
+    Fix Account Name
+    Update
+    Verify "Compound" period error
+    Fix Compound
+    Update
+    Verify Account added
+
+Action
+   Delete Account just added
+VERIFY
+   Account no longer in list of cash accounts
+   Account no longer in the account pul-down on the button bar
+
+Group 5 Loans
+
+Test: Loan Record Validation
+ACTION
+VERIFY
+
+
+Test: Add a Loan
+ACTION
+     To Be Added
+VERIFY
+     To Be Aded
+     
+Group 6 Transfers
+
+Test: Transfer Record Validation
+ACTION
+VERIFY
+
+Test: Add a Transfer
+SETUP
+     Open the Add Scheduled Transfers page
+ACTION
+     Click New
+     Click Add (with nothing filled in).
+     Click Update.
+VERIFY
+     That each of the required fields generates an error message.
+     Verify the entry got added after all required fields are provided.
+
+ACTION
+     Delete the newly added entry
+VERIFY
+     The delete occurred
+
+
+Group 7 Settings
+
+Test: Test Tracking Months
+------
+ACTION
+     Open a test data file with significant data
+VERIFY
+     24 months of data are in the text and graph
+     the Date Range shows 24 months
+ACTION
+    Open the Settings page and set the tracking months to 9
+VERIFY
+     9 months of data are in the text and graph
+     the Date Range shows 9 months
+ACTION
+     Open the Settings page and set the tracking months to 120
+VERIFY
+     120 months of data are in the text and graph
+     the Date Range shows 120 months
+ACTION
+     in the Date Range, set the start date 3 yrs out
+     and the end date 3 years in
+     OK
+     Update
+VERIFY
+     the new date Range in the Date Range checker and the graph
+ACTION
+     Open the Settings page and set the tracking months to 24
+VERIFY
+     24 months of data are in the text and graph
+     the Date Range shows 24 months, starting with the new start date
+
+Group 8 Graph Mode
+
+Test: Date Range - Multiple Calendars
+------
+ACTION
+     Open a test data file with significant data.
+     In Graph mode, depress "Date Range"
+VERIFY
+     The date range window appears
+ACTION
+    Click on the start date
+VERIFY
+     A calendar opens with the start date
+ACTION
+    Click on the start date multiple more times
+VERIFY
+     Nothing happens
+ACTION
+    Click on the end date
+VERIFY
+     A second calendar opens with the end date
+ACTION
+    Click on the end date multiple more times
+VERIFY
+     Nothing happens
+
+ACTION
+    Click on the Cancel button of the start calendar
+VERIFY
+     The window closes and the start date is unchanged
+ACTION
+    Click on the Cancel button of the end calendar
+VERIFY
+     The window closes and the end date is unchanged
+ACTION
+    Click on the Cancel button of the DateRange Window
+VERIFY
+     The window closes and the graph is unchanged
+
+ACTION
+     Depress "Date Range", the start date and end date
+VERIFY
+     All three windows appear
+
+Test: Date Range - Modify the start and end dates
+
+ACTION
+     Modify the start date. Modify the end date. (Lessen the window by months)
+     Select OK on both calendars
+VERIFY
+     Each date updates accordingly
+     
+ACTION
+     Click Update in the Date Range window
+VERIFY
+     The graph data has updated with the new range
+
+ACTION
+     Depress "Date Range", the start date and end date
+VERIFY
+     All three windows appear 
+ACTION
+     Depress Cancel on the Date Range Window
+VERIFY
+     All three windows close 
+     
+Test: Date Range - Cancel function
+
+ACTION
+     Depress "Date Range" and the start date
+     Update the start date
+     Depress Cancel in the Calendar window
+VERIFY
+     The calendar window should close and the start date should not change 
+
+Test: Date Range - Bad start date : after end date
+
+ACTION
+     Depress "Date Range", the start date
+VERIFY
+     Two windows appear 
+ACTION
+     Change the start date to be after the end date. OK
+VERIFY          -----------------------------------
+     The start Calendar will close and the date picker will show the new start.
+     
+ACTION
+     Depress Update button in the Range picker window
+VERIFY
+     An error window appears indicating the start or end date must be changed.
+ACTION
+     Change the end date to after the start date
+VERIFY          --------------------------------
+     The new dates will be accepted and the graph will update.
+
+Test: Date Range - Bad start date : before the current date
+
+
+ACTION
+     Depress "Date Range", the start date and end date
+VERIFY
+     Three windows appear 
+ACTION
+     Change the start date to before the current date. OK
+VERIFY          -------------------------------------
+     The start Calendar will close and the date picker will show the new start.
+ACTION
+     Depress the Update button on the Date Range window.
+VERIFY
+     Error - Start date before current date
+ACTION
+     Fix the start date
+     
+Test: Date Range - Bad end date : beyond tracking period
+ACTION
+     Change the end date to after the max_end_date (24 months). OK
+VERIFY          ----------------------------------------------
+     The end Calendar will close and the date picker will show the new end.
+ACTION
+     Depress the Update button on the Date Range window.
+VERIFY
+     Error - End Date is beyond the Mxx End Date.
+
+Group 9 Account Edit Paging
+
+Test: Test Bonds Per Page
+
+Start by opening up a fairly varied data file with a multitude
+of bonds including some that have matured and some that have been
+called. These should be from multiple accounts.
+
+ACTION
+     Open the bond page and note the number of bonds displayed.
+VERIFY
+     The number matches the bonds_pre_page settings
+ACTION
+     Change the bonds_per_page to 15
+VERIFY
+     Open the bond page and verify 15 bonds displayed
+ACTION
+     Page through the bonds
+VERIFY
+     Verify the page info in the control frame (page num, buttons,...)
+ACTION
+     Create a new bond from the second page and add
+VERIFY
+     Ensure it shows up in the list of bonds
+
+Group 10 Account Edit Filtering
+
+Test: Filter by account
+ACTION
+     Filter the list for each account
+VERIFY
+     Correct content
+     
+Test: Filter by status
+
+ACTION 
+     Filter the list by different status
+VERIFY
+     Correct content
+
+
+delete bond in conjunction with paging/filtering
+Bond call on a latter page
+
+Group 11 - Occurrences
+
+SETUP
+     Open the Add/Edit Scheduled Transfers page
+
+Test: Date change for 'once'
+ACTION
+     Click on a 'once' transfer
+     Change the date / OK
+     Accept the Occurrence spec and close.
+     Update
+VERIFY
+     The date of the transfer has changed.
+     In the account, the transfer occurred on the new date ?????
+
+Test: Regularity change to 'monthly'
+ACTION
+     Click on a 'once' transfer
+     Change How Often to 'Monthly'
+VERIFY
+     The day of the month matches the start date
+ACTION
+     Change the start date (try a few including Feb 28th)
+VERIFY
+     The day of the month matches the start date
+ACTION
+     Accept the Occurrence
+     Update the transfers
+VERIFY
+     Look at transfers again to ensure changes accepted
+     Look at the register to ensure proper transfers
+
+Test: Regularity change to 'weekly'
+ACTION
+     Click on a 'once' transfer
+     Change How Often to 'weekly'
+VERIFY
+     The day of the week matches the start date
+ACTION
+     Change the start date (try a few including Feb 28th)
+VERIFY
+     The day of the week matches the start date
+
+Test: Regularity change to 'bi-weekly'
+ACTION
+     Click on a 'once' transfer
+     Change How Often to 'bi-weekly'
+VERIFY
+     The day of the week matches the start date
+ACTION
+     Change the start date (try a few including Feb 28th)
+VERIFY
+     The day of the week matches the start date
+
+Test: Regularity change to 'twice-a-month'
+ACTION
+     Click on a 'once' transfer
+     Change How Often to 'twice-a-month'
+VERIFY
+     The first day matches the start date
+     The second day is 15 days out
+ACTION
+     Change the start date (try a few; start and end of month)
+VERIFY
+     The first day matches the start date
+     The second day is 15 days out
+
+Test: Regularity change to 'quarterly'
+ACTION
+     Click on a 'once' transfer
+     Change How Often to 'quarterly'
+VERIFY
+     The day of the month matches the start date
+ACTION
+     Change the start date (try a few including Feb 28th, Nov 30th)
+VERIFY
+     The day of the month matches the startdate
+
+Test: Regularity change to 'semi-annual'
+ACTION
+     Click on a 'once' transfer
+     Change How Often to 'semi-annual'
+VERIFY
+     The day of the month matches the start date
+ACTION
+     Change the start date (try a few including Feb 28th)
+VERIFY
+     The day of the month matches the start date
+
+Test: Regularity change to 'annual'
+ACTION
+     Click on a 'once' transfer
+     Change How Often to 'annual'
+VERIFY
+     The month / day matches the start date
+ACTION
+     Change the start date (try a few including Feb 28th)
+VERIFY
+     The month / day matches the start date
+
+Test: End Date change to 'End On'
+ACTION
+     Click on a 'monthly' transfer
+     Change End Date to 'End on'
+VERIFY
+     Date button is added with the curent date
+ACTION
+     Change the date
+VERIFY
+     Verify the date change
+
+Test: End Date change to 'End After'
+ACTION
+     Click on a 'monthly' transfer
+     Change End Date to 'End After'
+VERIFY
+     Occurrence wheel combo is added.
+ACTION
+     Change the occcurrence count
+VERIFY
+     Verify the change
+
+
+
+
+
+Group 12 - Upgrades
+
+Test The Upgrade Process
+-------------------------
+If an upgrade of the data file occurred, run the folowing tests
+
+Still running the pre-release version:
+1. Copy a version of the .dat with a previous release to the local tree.
+   Name it upgradable.dat
+2. Observe the version number in upgradable.dat
+3. Open the log file.
+   Start up the GUI and open upgradable.dat
+   Verify the upgrade occurred in the log file
+4. Run some tests related to the upgrade
+   e.g V1.13 added the call feature to bonds
+       Explore things in the bond area that are new
+       try to call a bond
+5. Close the GUI
+6. Observe the version number in upgradable.dat.
+   Ensure it has been upgraded.
+   
+
+
+
+
+
+
+
