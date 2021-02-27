@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains help text and support for the Cash Flow application
 
@@ -16,7 +16,7 @@ help_text = {
     "Overview":
 "Overview of the Cash Flow Application\n\n\
 This application is intended predict future cash flows based on \
-the current value of cash accounts and the ownership of loans, CDs \
+the current value of cash accounts and the ownership of funds, loans, CDs \
 and Bonds.\n\n\
 The cash flow results are viewable in either\n\
  - Text Format or\n\
@@ -28,6 +28,12 @@ Note: If the opening date of a cash account is prior to the current date, \
 cash flow will be presented, in text mode, from the account opening date through the end date. However, graph mode is restricted to begin at the current date.\
 \n\n\
 Note: Past bond, loan and CD information is held for historical purposes and can be viewed from the Edit Menu",
+    "Usage":
+"Using The Cash Flow Application\n\n"
+"The first step in using this application is to create a data file to store\n\
+you data. A data file is created using the File/New Data File selection.\n\n\
+Next you need to create at least one account. Accounts are created using the\n\
+Edit/Account menu. You can add a checking account,savings, brokerage, etc.",
     "File":
 "File Menu Help\n\n\
 Open Data File    Use this option to open an existing data file. The data\n\
@@ -51,6 +57,28 @@ Tracking Months:  The number of months cash flows will be tracked \n\
                   from the current date.\n\
                   A pull down is available with common choices but any\n\
                   number of months could be entered.\n",
+    "Editing Accounts":
+"Editing the Accounts List\n\n\
+In this window you add or edit account information. An account is something\n\
+you open with a bank, a brokerage firm or on-line. The account may be\n\
+simply a checking or savings account or it may be a brokerage account.\n\
+If its a brokerage account it may contain many additionaal finacial instruments\n\
+such as stock bonds and mutual funds. They will be entered elswehere.\n\n\
+This window is used to enter the top level account information only.\n\n\
+Account Name:  The account nickname. In almost all cases, the nickname\n\
+               is the used to refer to the account.\n\n\
+Account ID:    The ID the bank or brokerage firm uses to identify the\n\
+               account. This is useful when importing data from a bank\n\
+               or brokerage account.\n\n\
+Account Type:  This is self explanatory.\n\n\
+Update Method  Account information may be updated via download from the\n\
+               bank/firm or it may be provided manually. If account download\n\
+               is supported, make the appropriate selection from the\n\
+               pull down menu.\n\n\
+Note: Some Account Types, such as checking and savings, are simple cash\n\
+accounts. These accounts will be automatically placed in the cash accounts list.\n\
+For broakerage accounts you will have to enter the sweep account manually since\n\
+there is additioan information required.\n",
     "Editing Cash Accounts":
 "Editing the Cash Accounts List\n\n\
 Cash accounts hold cash. They can be a bank account, a checking account or\n\
@@ -61,6 +89,11 @@ Account Name:  The account nickname. In almost all cases, the nickname\n\
 Account ID:    The ID the bank or brokerage house uses to identify the\n\
                account. This is useful when importing data from a bank\n\
                or brokerage account.\n\n\
+Account Type:  This is self explanatory.\n\n\
+Update Method  Account information may be updated via download from the\n\
+               bank/firm or it may be provided manually. If account download\n\
+               is supported, make the appropriate selection from the\n\
+               pull down menu.\n\n\
 Opening Date:  Opening date is the date the account contained the amount\n\
                specified in the 'Balance' column. Typically, the Opening Date\n\
                is advanced each time the balance is updated\n\n\
@@ -127,8 +160,10 @@ The following fields can be manually edited:\n\n\
   CUSIP:           Bond identifier used by the brokerage house.\n\n\
   Issuer:          Stated issuer of the bond.\n\n\
 ",
-    "Editing The Loan List":
-"Loans",
+    "Editing Loans":
+"Editing the Loans list",
+    "Editing The Transfers List":
+"Transfers",
     "Editing Scheduled Transfers":
 "Transfers",
     "Editing Funds":

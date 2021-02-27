@@ -3,21 +3,45 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to present a GUI to the cash flow report.
 #
 #  To Do
 #   . datepicker widget - if month has 6 rows, the botom buttons are cut off
-#   . scheduled transfers, date ordering (click on a date) doen't work properly
-# XXXX. Run pylint
+#   . scheduled transfers, date ordering (click on a date) doesn't work properly
 #   . Help - review help text
 #   . Architectural
-#     - in order to properly support funds, I need multiple funds
-#       in an account
-#       . add fund name to register entry.
-#          This will facilitate generating fund/account graphs and text
+#      - I have added funds to the edit menu, the file read and file write
+#      - how to move money from funds to CA -
+#         option 1- sell action on fund: cash goes to sweep account
+#              Issue - the fund menu to not support fund sales (wrong columns)
+#                    solution 1 - add a sell menu item / record same as transfer records
+#                               - user can schedule a sale and/or purchase
+#                               - this creates two unique places where events are schedule
+#                     solution 2 - add a sell record and change 'scheduled transfers'
+#                                  to 'scheduled actions'
+#                                - net result is one place where all events are
+#                                  recorded and I can fix the date sorting
+#         option 2 - manually adjust balance in funds and CA
+#              Issue - this can't be planned for future events hence you can't
+#                      prdedict / analyze
+#                     - this option is pretty much useless
+#  *****  option 3 - do I allow transfers from fund to CA and forget about sales
+#                     solution 1 - I would have to beef up the transfer page
+#                                - will required modifications to the transfer record
+#                                - will require mods to the transfer menu
+#        related question : should Adding a fund debit the CA
+#                         : should Adding a bond debit the CA
+#                         : Bond sale already credits the CA - YES
+#                         : should fund sale credit the CA - YES
+#                         : if bond data is imported, do we import the CA amount as well?
+#                              should this possibly affect the CA?
+#                         : if fund data iss imported, do we import CA amount as well?
+#                              should this possibly affec the CA?
+#     - sceduled transfers - date sort - I show the next occurrence in the transfer window,
+#                                      but it looks like I sort based on the first ocurrence?
 #   . General
 #     - File / Validate Data File
 #       . this would be nice to have, at least a framework
@@ -322,8 +346,8 @@ class MyMenuBar:
         self.parent = parent  # Gui
         self.master = master  # Tk.root
         self.data_file_name = ""
-        self.edit_window_open = {
-            'account': 0, 'ca': 0, 'cd': 0, 'loan': 0, 'bond': 0,
+        self.edit_window_open = {             # use an instrement type to index this dictionary
+            'account': 0, 'ca':0, 'cd': 0, 'loan': 0, 'bond': 0,
             'fund': 0, 'transfer': 0, 'settings': 0}
         self.import_account_win_open = False
         self.import_bond_details_win_open = False
@@ -400,6 +424,11 @@ class MyMenuBar:
                                            Help,
                                            "Overview",
                                            self.master))
+        self.help_menu.add_command(label="Using This Application",
+                                   command=partial(
+                                           Help,
+                                           "Usage",
+                                           self.master))
         self.help_menu.add_command(label="File Menu!",
                                    command=partial(
                                            Help,
@@ -411,6 +440,11 @@ class MyMenuBar:
                                    command=partial(
                                            Help,
                                            "Editing Settings",
+                                           self.master))
+        self.edit_menu.add_command(label="Accounts",
+                                   command=partial(
+                                           Help,
+                                           "Editing Accounts",
                                            self.master))
         self.edit_menu.add_command(label="Cash Accounts",
                                    command=partial(
@@ -427,15 +461,20 @@ class MyMenuBar:
                                            Help,
                                            "Editing The Bond List",
                                            self.master))
-        self.edit_menu.add_command(label="Transfers!",
-                                   command=partial(
-                                           Help,
-                                           "Editing Scheduled Transfers",
-                                           self.master))
         self.edit_menu.add_command(label="Funds!",
                                    command=partial(
                                            Help,
                                            "Editing Funds",
+                                           self.master))
+        self.edit_menu.add_command(label="Loans!",
+                                   command=partial(
+                                           Help,
+                                           "Editing Loans",
+                                           self.master))
+        self.edit_menu.add_command(label="Transfers!",
+                                   command=partial(
+                                           Help,
+                                           "Editing Scheduled Transfers",
                                            self.master))
         self.help_menu.add_command(label="Account Pull Down!",
                                    command=partial(
@@ -503,8 +542,11 @@ class MyMenuBar:
                  "type": "entry", "content": "text"},
                 {"heading": "Account Type", "key": "account_type", "width": dfc.FW_MEDSMALL,
                  "type": "combo", "content": dfc.account_types},
-                {"heading": "UpdateMethod", "key": "update_method", "width": dfc.FW_MEDSMALL,
-                 "type": "combo", "content": ImportMethodsSupported}]
+                {"heading": "Opening Date", "key": "opening_date", "width": dfc.FW_SMALL,
+                 "type": "date", "content": "standard"},
+                {"heading": "Update Method", "key": "update_method", "width": dfc.FW_MEDSMALL,
+                 "type": "combo", "content": ImportMethodsSupported},
+                ]
 
             self.edit_window_open['account'] = 1
             AccountEditWin(self.parent, 'Accounts', columns,
@@ -515,27 +557,25 @@ class MyMenuBar:
     def edit_cash_accounts(self):
         if self.edit_window_open['ca'] == 0:
             compound1 = ['monthly', 'quarterly', 'annual', 'semi-annual']
+            accnt_set = self.parent.get_sorted_accounts_list()
 
             columns = [
                 {"heading": "Account Name", "key": "account", "width": dfc.FW_MED,
-                 "type": "entry", "content": "text"},
-                {"heading": "Account ID", "key": "account_id", "width": dfc.FW_MEDSMALL,
-                 "type": "entry", "content": "text"},
-                {"heading": "Opening Date", "key": "opening_date", "width": dfc.FW_SMALL,
-                 "type": "date", "content": "standard"},
+                 "type": "text", "content": "ThinLeft.TLabel"},
                 {"heading": "Balance", "key": "balance", "width": dfc.FW_SMALL,
                  "type": "entry", "content": "dollars"},
                 {"heading": "Rate", "key": "rate", "width": dfc.FW_SMALLEST,
                  "type": "entry", "content": "rate"},
                 {"heading": "Interest Date", "key": "interest_date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
-                {"heading": "Compound", "key": "frequency", "width": dfc.FW_SMALL,
-                 "type": "combo", "content": compound1}]
+                {"heading": "Pay\nFrequency", "key": "frequency", "width": dfc.FW_SMALL,
+                 "type": "combo", "content": compound1},
+            ]
 
             self.edit_window_open['ca'] = 1
             AccountEditWin(self.parent, 'Cash Accounts', columns,
                            self.parent.get_cash_accounts(), 'ca',
-                           'account', 'interest_date',
+                           'account', 'balance',
                            validate_func=self.validate_ca_entry)
 
     def edit_cds(self):
@@ -645,7 +685,7 @@ class MyMenuBar:
                  "type": "combo", "content": accnt_set},
                 {"heading": "Fund Name", "key": "fund", "width": dfc.FW_MED,
                  "type": "entry", "content": "text"},
-                {"heading": "Date", "key": "interest_date", "width": dfc.FW_SMALL,
+                {"heading": "Date", "key": "date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
                 {"heading": "balance", "key": "balance", "width": dfc.FW_SMALL,
                  "type": "entry", "content": "dollars"},
@@ -855,6 +895,23 @@ class MyMenuBar:
 
     def validate_fund_entry(self, rec, column_desc):
         """Validate the content of a fund record."""
+        print(rec)
+        header = ""
+        if rec["account"] == "":
+            return header + "\"{}\" must be a valid account name.".format(
+                    self.get_column_heading("account", column_desc))
+
+        elif rec["fund"] == "":
+            return header + "\"{}\" must be a valid fund.".format(
+                    self.get_column_heading("fund", column_desc))
+
+        elif rec["date"] == "":
+            return header + "\"{}\" must be a valid date.".format(
+                    self.get_column_heading("date", column_desc))
+
+        elif rec["frequency"] == "":
+            return header + "\"{}\" must be a valid value.".format(
+                    self.get_column_heading("frequency", column_desc))
 
         return ""
 
@@ -902,7 +959,11 @@ class MyMenuBar:
             return "\"{}\" may not be left blank.".format(
                     self.get_column_heading("account", column_desc))
 
-        if rec["update_method"] != "Manual" and rec["account_id"] == "":
+        elif rec["account_type"] == "":
+            return header + "\"{}\" must be a valid entry.".format(
+                self.get_column_heading("account_type", column_desc))
+
+        elif rec["update_method"] != "Manual" and rec["account_id"] == "":
             return header + \
                    "\"{}\" field may not be left blank when {} is specified." \
                        .format(self.get_column_heading("account_id", column_desc),
@@ -911,9 +972,6 @@ class MyMenuBar:
 
     def validate_ca_entry(self, rec, column_desc):
         """Validate the content of a cash account record. """
-
-        # TODO account name can not already exist
-
         header = ""
         if rec["account"] == "":
             return header + "\"{}\" may not be left blank.".format(
@@ -1181,6 +1239,9 @@ class CfGui:
     def format_date(self, date):
         return self.ds.format_date(date)
 
+    def get_accounts(self):
+        return self.ds.get_accounts()
+
     def get_cash_accounts(self):
         return self.ds.get_cash_accounts()
 
@@ -1205,9 +1266,6 @@ class CfGui:
     def get_sorted_accounts_list(self):
         return self.ds.get_sorted_accounts_list()
 
-    def get_accounts(self):
-        return self.ds.get_accounts()
-
     def get_new_rec(self, instrument_type):
         return self.ds.get_new_rec(instrument_type)
 
@@ -1222,6 +1280,15 @@ class CfGui:
 
     def init_ds_storage(self):
         self.ds.init_storage()
+
+    def account_delete(self, account):
+        self.ds.account_delete(account)
+
+    def account_create(self, rec):
+        self.ds.account_create(rec)
+
+    def account_name_changed(self, old_name, new_name):
+        self.ds.account_name_changed(old_name, new_name)
 
     def restart(self):
         self.ds.restart(int(self.get_settings('tracking_months')))

@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to present a GUI to the cash flow application.

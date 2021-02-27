@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to manage files.
@@ -46,6 +46,8 @@ class FileManager:
         - version Number
         - reserved 1
         - reserved 2
+        - num_account_entries
+        - account_entries
         - num_cash_account_entries
         - cash_account_entries
         - num_cd entries
@@ -54,6 +56,8 @@ class FileManager:
         - loan entries
         - num bond entries
         - bond entries
+        - num fund entries
+        - fund entries
         - num transfer entries
         - transfer entries
 
@@ -81,11 +85,13 @@ class FileManager:
 
         settings = []  # temp storage for settings
 
-        instrument_type = [self.parent.get_accounts(),
+        instrument_type = [
+                           self.parent.get_accounts(),
                            self.parent.get_cash_accounts(),
                            self.parent.get_cds(),
                            self.parent.get_loans(),
                            self.parent.get_bonds(),
+                           self.parent.get_funds(),
                            self.parent.get_transfers(),
                            # TODO can we get settings from the settingsMgr
                            settings
@@ -122,6 +128,7 @@ class FileManager:
         file_handle.write("Reserved 1" + "\n")
         file_handle.write("Reserved 2" + "\n")
 
+        # Accounts
         file_handle.write(str(len(self.parent.get_accounts())) + "\n")
         writer = csv.DictWriter(file_handle,
                                 fieldnames=dfc.acc_fieldnames,
@@ -130,6 +137,7 @@ class FileManager:
         for entry in self.parent.get_accounts():
             writer.writerow(entry)
 
+        # cash accounts
         file_handle.write(str(len(self.parent.get_cash_accounts())) + "\n")
         writer = csv.DictWriter(file_handle,
                                 fieldnames=dfc.ca_fieldnames,
@@ -138,6 +146,7 @@ class FileManager:
         for entry in self.parent.get_cash_accounts():
             writer.writerow(entry)
 
+        # cds
         file_handle.write(str(len(self.parent.get_cds())) + "\n")
         writer = csv.DictWriter(file_handle,
                                 fieldnames=dfc.cd_fieldnames,
@@ -146,6 +155,7 @@ class FileManager:
         for entry in self.parent.get_cds():
             writer.writerow(entry)
 
+        # loans
         file_handle.write(str(len(self.parent.get_loans())) + "\n")
         writer = csv.DictWriter(file_handle,
                                 fieldnames=dfc.loan_fieldnames,
@@ -154,15 +164,25 @@ class FileManager:
         for entry in self.parent.get_loans():
             writer.writerow(entry)
 
+        # bonds
         file_handle.write(str(len(self.parent.get_bonds())) + "\n")
         writer = csv.DictWriter(file_handle,
                                 fieldnames=dfc.bond_fieldnames,
                                 quoting=csv.QUOTE_NONNUMERIC)
         writer.writeheader()
         for entry in self.parent.get_bonds():
-
             writer.writerow(entry)
 
+        # funds
+        file_handle.write(str(len(self.parent.get_funds())) + "\n")
+        writer = csv.DictWriter(file_handle,
+                                fieldnames=dfc.fund_fieldnames,
+                                quoting=csv.QUOTE_NONNUMERIC)
+        writer.writeheader()
+        for entry in self.parent.get_funds():
+            writer.writerow(entry)
+
+        # transfers
         file_handle.write(str(len(self.parent.get_transfers())) + "\n")
         writer = csv.DictWriter(file_handle,
                                 fieldnames=dfc.xfer_fieldnames,

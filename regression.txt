@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W%/t%G%
 #
-# Copyright (c) 2018 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 
 Unit test runs w/o error
@@ -20,42 +20,50 @@ python3 cf.py
 
 Group 1 - Startup and Cash Accounts
 Test: New data File
-Test: Add CA
-Test: Add Multipl CAs
+Test: Add Account
+Test: Add Multipl Accounts
 ------
 ACTION - 
     Fire up the GUI
     File / New Data file
         test33
-    Add/Edit Cash Account
-        New
-            Brokerage
+    Edit  / Account
+        NEW
+            Brokerage_1
             12345
-            beg of month
+            Brokerage
+            Manual
+        ADD
+        UPDATE
+    Edit / Cash Account
             1000
             12
             end of month
             monthly
-        ADD
+        UPDATE
 VERIFY
-    Account shows up in Cash Accounts list
-    UPDATE Button
-VERIFY
+    Account shows up in Account List and Cash Accounts list
+    UPDATE Button for each
+VERIFY (on the main screen)
      Brokerage is in the accounts list and select it
 ACTION
-    Add/Edit Cash Account
-        New
-            Brokerage 2
-            67890
-            beg of month
+    Edit  / Accounts
+        NEW
+            Brokerage_2
+            789
+            Brokerage
+            Manual
+        ADD
+        UPDATE
+    Edit / Cash Account
             1000
             12
             end of month
             monthly
-         ADD
-         Update
-     DO NOT EXIT
-     File / New Data File
+        UPDATE
+ DO NOT EXIT
+ 
+File / New Data File
          test34 / Save
 VERIY
      Account list is empty
@@ -76,19 +84,23 @@ ACTION
     Fire up the Gui
     File / Open data file
         test35
-    Add/Edit Cash Account
-        New
-           Brokerage
-           123
-           beg of month
-           1000
-           12
-           end of month
-           monthly
+
+    Edit  / Account
+        NEW
+            Brokerage
+            12345
+            Brokerage
+            Manual
         ADD
- VERIFY
-    Account shows up in Cash Accounts list
-    Update Button
+        UPDATE
+    Edit / Cash Account
+            1000
+            12
+            end of month
+            monthly
+        UPDATE
+VERIFY
+    Account shows up in Account and Cash Accounts list
     Account now in account Frame
 
 Group 2 - Bonds 
@@ -96,10 +108,10 @@ Test: Window management in Account Edit - minimize / reopen
 
 ACTION
     Open a substantial data file 
-    Open the Edit  / bond page
-    Open the Actions menu on a bond
-    Minimize the Edit Bonds window
-    Reopen the Add/Edit menu
+    Open the Edit / Bonds page
+    Open the Actions menu on a bond (right click)
+    Minimize the Edit Bonds window (dash in upper right)
+    Reopen the Add/Edit menu (click on the window in the task bar)
 VERIFY
     LINUX - the Actions menu should close and open along with the
             Add/Edit window. You should be able to close/open more
@@ -111,7 +123,7 @@ VERIFY
 Test: Window management in Account Edit - subordinate windows
 
 ACTION
-    Open the Add/Edit Bond page
+    Open the Edit / Bond page
     Select "New" and open both datepickers
     Leave all open
     Select "New" again and open both datepickers
@@ -139,9 +151,10 @@ VERIFY
 
 Test: Bond Delete/Undelete - no actual delete
 
+
 SETUP
     Open a test file with lots of stuff (gglezman.dat)
-    Open the Add/Edit bond page
+    Open the Edit / Bonds page
 ACTION
     Test Delete/Undelete
        Mark a bond as deleted (on item menu) - verify correct item !
@@ -189,7 +202,7 @@ ACTION
      Update - error - Purchase Price NG: fix
      Update - error - Quantity NG: fix
      Update - error - Coupon NG: fix
-     Update - error - Settlement date NG: fix
+     Update - error - Maturity date NG: fix
      Update - error - Compound NG: fix
      Upate
 Verify
@@ -234,9 +247,11 @@ ACTION
 VERIFY
     Verify erro msg
 
+NOTE - verification is RUN even if we are attempting to delete the bond record
+
 Test: Bond Add with update
 SETUP
-    Open the Add/Edit bond page
+    Open the Edit / Bonds page
     From page 1 in the bonds listing
 ACTION     
     Test Bond Add - New
@@ -295,7 +310,7 @@ ACTION
 Test: Test Bond sorting
 
 ACTION
-    Open the Add/Edit bond page
+    Open the Edit / Bonds page
 VERIFY
     Verify sort by account/Maturity Date
 ACTION
@@ -318,11 +333,15 @@ ACTION
     Click "call" for a bond 1 NOT currently called
     Click "call" for a bond 2 NOT currently called
     Click "call" for a bond 3 NOT currently called
-    Cancel all three
+    Cancel all three with the cancel button bottom of the full bond page
+         (not the cancel button on the Call window)
+
+BUG - CHECKBOX is checked even though I cancelled!!
+
     Update
 VERIFY
     Reopen bond page
-    No change to checkbutton
+    Call checkbox should NOT be checked
 ACTION
     Click "call" for a bond NOT currently called
     Change the call date, make it INVALID (ie beyond maturity date)
@@ -330,7 +349,7 @@ ACTION
     Update
 VERIFY
     Reopen bond page
-    No change to checkbutton
+    No change to checkbutton- still unchecked
 
 Test: Bond Call: Accept
 SETUP
@@ -347,7 +366,7 @@ VERIFY
 ACTION
     Open a menu on a bond and select Bond Call
            ---------------
-    Enter valid date (before maturity but after settlement)
+    Enter valid date (before maturity but after settlement, after today)
     Enter a valid price
     Accept the call
 VERIFY
@@ -382,6 +401,8 @@ ACTION
 VERIFY
     Proper Error message: "Call Date must be before Maturity date"
     Cancel the call
+        - click the call checkbox next to the bond
+        - click cancel call
 ACTION
     Click "call" for a bond NOT currently called
     Change the call date to before the settlement date
@@ -398,13 +419,13 @@ ACTION
     Accept
 VERIFY
     Proper Error message - "Redemption Price" required
-    Cancel the call
+    Cancel the action
 
 Group 3 - CDs 
 Test: Test CD Delete/Undelete - no actual delete
 
 ACTION
-    Open the Add/Edit CD page
+    Open the Edit / CD page
     Test Delete/Undelete
        Mark a CD as deleted (on item menu)
        Undelete the item
@@ -414,15 +435,23 @@ VERIFY
 
 Test: CD Record Validation
 ACTION
+    Open the Edit / CDs page
+    On an existing CD
+       change the Maturity date to before the settlement date
+    Update
 VERIFY
-
+    Error - Maturity date must be after settlemnt date
+ACTION
+    Cancel
+    Verify no change to CD list
+    
 Test: Test CD Add with update
 
 ACTION     
-    Open the Add/Edit CD page
-    Test CD Add
-       Add a CD New
-       update
+    Open the Edit / CDs page
+    New - fill in valid details
+    Add
+    Update
 VERIFY
     The CD got added
     Sort is correct based on default sort (account/maturity date)
@@ -432,30 +461,46 @@ VERIFY
 Test: Test CD Delete with update
 
 ACTION     
-    Open the Add/Edit CD page
+    Open the Edit / CDs page
     Test CD Delete
        Delete a CD
-       update
+    Update
 VERIFY
     The CD got deleted
 
-Group 4: Cash Accounts
-Test: Test CA Delete/Undelete - no actual delete
+Test: Test CD validation
+ACTION
+    Open the Edit / CDs page
+    New - leave record empty
+    Add
+    Update
+VERIFY
+     Update - error - CUSIP NG: fix
+     Update - error - Account Name: fix
+     Update - error - Cost may not be zero: fix
+     Update - error - Quantity must be a minimum of 1: fix
+     Update - error - Rate must be > 0: fix
+     Update - error - Maturity date must be after purchase date: fix
+     Update - error - Compounding value must be valid: fix
+     Upate
+
+Group 4:  Accounts
+Test: Test Account Delete/Undelete - no actual delete
 
 ACTION
-    Open the Add/Edit Cash Account page
+    Open the Edit /Account page
     Test Delete/Undelete
        Mark an account as deleted (on item menu)
        Undelete the item
        update
 VERIFY
-    Open the Cash Accounts page and verify the delete did NOT happen
+    Open the Accounts page and verify the delete did NOT happen
     Sort is correct based on default sort (account/maturity date)
 
-Test: Test CA Entry Validation
+Test: Test Account Entry Validation
 
 ACTION
-    Open the Add/Edit Cash Account page
+    Open the Edit / Account page
     New with no data entered into record
     Add
     Update
@@ -464,17 +509,76 @@ VERIFY
     Verify "Account Name" error
     Fix Account Name
     Update
-    Verify "Compound" period error
-    Fix Compound
+    Verify "Account Type" error
+    Fix Account Type
     Update
     Verify Account added
+    Verify the account is in the Account Pull-down, main screen
+    Verify the Cash Account was created
+    
+Test: Test Account Delete
 
 Action
    Delete Account just added
 VERIFY
-   Account no longer in list of cash accounts
-   Account no longer in the account pul-down on the button bar
+   Account no longer in list of accounts
+   Account no longer in the account pull-down on the button bar
+   The Cash account is also deleted
 
+Test: Test deleting/renaming an account.
+      Deleting an account deletes all its content (ie bonds, funds,...)
+      Renaming an account changes the account name for all the accounts content.
+
+      Create an account with bonds, cds, etc then renaming it then delete it.
+      
+ACTION
+   Create  a new account
+       Edit / Accounts / New
+       fill in the details (AccountName: test)
+           Add
+       update
+   Create bond in that account
+       Edit / Bonds / New
+          AccountName: test
+          other valid data
+   Create a CD in the account
+       Edit / CDs / New
+           AccountName: test
+   Create a loan in that account
+       Edit / Loan / New
+           AccountName: test
+   
+VERIFY
+    The account is in the Edit / account list
+    The account is in the pull-down menu
+    The cash account is in the cash account list
+    In the bond menu, filter by the new account
+        verify the bond is in the account
+    The CD is listed under edit / CDs
+    The loan is listed under edit / Loans list
+
+ACTION
+    Rename the Account
+        Edit / account
+            change the account name in the name field
+            Update
+VERIFY
+    The Acccount name is changed in the Main screen pull-down
+     "      "       "  '   "     in the cash account.
+     "      "       "  '   "     in the bonds in the account
+     "      "       "  '   "     in the CDs
+     "      "       "  '   "     in the Loans
+     "      "       "  '   "     In the Funds - TBD
+
+ACTION
+    Delete the Account: test
+
+VERIFY
+    The account is gone (Edit / Accounts and pull-down menu)
+    The bond is gone and the account is not in the filter pull-down
+    The CD is gone
+    The loan is gone
+     
 Group 5 Loans
 
 Test: Loan Record Validation
@@ -493,6 +597,10 @@ Group 6 Transfers
 Test: Transfer Record Validation
 ACTION
 VERIFY
+
+gjg - continue from here
+
+NAME CHANGE !!!!!!!!!!!!!!!!!!!
 
 Test: Add a Transfer
 SETUP

@@ -2,7 +2,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # Upgrade a data file for a new version of the cf code.
 # A copy of the original is created as a backup.  Its name is
@@ -13,7 +13,7 @@
 # 
 #  caller
 #     opens data file and verifies magic tag
-#  upgrade gets a filename, fileHandle
+#  upgrader gets a filename, fileHandle
 #     reads version
 #     if upgrade required
 #         close the file handle
@@ -75,7 +75,7 @@ def data_file_upgrade(filename, file_handle, parent):
 
 def upgrade_to_1_21(filename, file_handle, parent, old_version):
     """Upgrade from 1.20 to 1.21.
-    In this upgrade, add update_method to the ca record.
+    In this upgrade, split CashAccounts into Accounts and Cash Accounts
     """
     new_version = '1.21'
     data_block = []
@@ -90,27 +90,38 @@ def upgrade_to_1_21(filename, file_handle, parent, old_version):
     # Read
     #########
     read_file_handle = read_block(read_file_handle, data_block)
-    ##########################################
-    # Mods - CAs now becomes accounts and CAs
-    ##########################################
-    acc_block = []
-    for rec in data_block:
-        acc_rec = {}
-        acc_rec['account'] = rec['account']       # this is new
-        acc_rec['account_id'] = rec['account_id']      # this is new
-        acc_rec['update_method'] = "Manual"            # this is new
-        acc_rec['account_type'] = dfc.account_types[0] # this is new
-        acc_block.append(acc_rec)
 
-        # force proper type (??)
-        rec['balance'] = float(rec['balance'])
-        rec['rate'] = float(rec['rate'])
+    # The following two are created from the existing CAs
+    cash_accounts = []
+    accounts = []
+
+    ##########################################
+    # Mods - CAs
+    ##########################################
+    for rec in data_block:
+        account_rec = {}
+        account_rec['account'] = rec['account']
+        account_rec['account_id'] = rec['account_id']
+        account_rec['opening_date'] = rec['opening_date']
+        account_rec['account_type'] = dfc.account_types[0]  # this is new
+        account_rec['update_method'] = "Manual"
+        account_rec['note'] = rec['note']
+        accounts.append(account_rec)
+
+        ca_rec = {}
+        ca_rec['account'] = rec['account']
+        ca_rec['balance'] = float(rec['balance'])
+        ca_rec['rate'] = float(rec['rate'])
+        ca_rec['interest_date'] = rec['interest_date']
+        ca_rec['frequency'] = rec['frequency']
+        ca_rec['note'] = rec['note']
+        cash_accounts.append(ca_rec)
 
     #########
     # Write
     #########
-    write_block(write_file_handle, acc_block, dfc.acc_1_21_fieldnames)
-    write_block(write_file_handle, data_block, dfc.ca_1_21_fieldnames)
+    write_block(write_file_handle, accounts, dfc.acc_1_21_fieldnames)
+    write_block(write_file_handle, cash_accounts, dfc.ca_1_21_fieldnames)
 
     #######################
     # CDs
@@ -182,6 +193,22 @@ def upgrade_to_1_21(filename, file_handle, parent, old_version):
     writer.writeheader()
     for rec in data_block:
         writer.writerow(rec)
+
+    #######################
+    # Funds - this is new
+    #######################
+
+    # create an empty section
+    data_block.clear()
+
+    #########
+    # Write
+    #########
+    write_file_handle.write(str(len(data_block)) + "\n")
+    writer = csv.DictWriter(write_file_handle,
+                            fieldnames=dfc.fund_1_21_fieldnames,
+                            quoting=csv.QUOTE_NONNUMERIC)
+    writer.writeheader()
 
     #######################
     # Transfers

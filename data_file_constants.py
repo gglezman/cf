@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 # 
 # This file defines the content of the data file as it evolves
 # through releases.
@@ -42,7 +42,8 @@ SMALL_BORDER_WIDTH = 2
 BORDER_WIDTH = 4
 
 account_types = ['Checking', 'Brokerage', 'Savings', 'Money Market']
-instrument_types = ['account', 'ca', 'bond', 'cd', 'loan', 'transfer' ]
+#instrument_types = ['account', 'ca', 'bond', 'cd', 'loan', 'transfer' ]
+instrument_types = ['ca', 'bond', 'cd', 'loan', 'transfer' ]
 
 # the following should be used in conjunction with
 #     datetime.strftime(xxx_FORMAT)
@@ -55,19 +56,18 @@ SHORT_DATE_FORMAT = '%m/%d'
 
 # Note: The xx_new_rec 's are used to create a new record
 #       of the associated type. They contain the default
-#       ales for a new rec
+#       values for a new rec
 
 #################################
 # As of  1.21
 #################################
-acc_1_21_fieldnames = ['account', 'account_id', 'account_type', 'update_method',]
-acc_new_rec = {'account': "", 'account_id': "",
-               'account_type': account_types[0], 'update_method': "Manual"}
+acc_1_21_fieldnames = ['account', 'account_id', 'opening_date', 'account_type','update_method','note']
+acc_new_rec = {'account': "", 'account_id': "", 'opening_date': "", 'account_type':"",
+              'update_method':"Manual", 'note': ""}
 
-ca_1_21_fieldnames = ['account', 'account_id', 'balance', 'rate', 'opening_date',
-                      'interest_date', 'frequency', 'note']
-ca_new_rec = {'account': "", 'account_id': "", 'balance': 0.0, 'rate': 0.0,
-              'opening_date': "", 'interest_date': "", 'frequency': "", 'note': ""}
+ca_1_21_fieldnames = ['account', 'balance', 'rate', 'interest_date', 'frequency', 'note']
+ca_new_rec = {'account': "", 'balance': 0.0, 'rate': 0.0,
+              'interest_date': "", 'frequency': "monthly", 'note': ""}
 
 bond_1_21_fieldnames = ['account', 'bond_price', 'quantity',
                         'coupon', 'fee', 'purchase_date', 'maturity_date',
@@ -113,7 +113,7 @@ default_settings = {'tracking_months': 24, 'default_account': "",
                     'bonds_per_page': 30, 'graph_type': "bar"}
 
 #################################
-# Current
+# Current field names
 #################################
 acc_fieldnames = acc_1_21_fieldnames
 ca_fieldnames = ca_1_21_fieldnames

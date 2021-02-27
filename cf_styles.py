@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to initialize ttk styles used.
@@ -13,8 +13,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import data_file_constants as dfc
 
-DELETE_COLOR = 'red'
-
+DELETE_COLOR = 'firebrick1'
 
 def set_styles():
 

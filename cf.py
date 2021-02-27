@@ -1,9 +1,10 @@
+
 #
 # Author: Greg Glezman
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # cf - cash flows
 #
@@ -11,8 +12,8 @@
 # Developers Notes
 # 1. The ledger is a dictionary indexed by account name. The entry
 #    in the dictionary is a list of transactions.  Each transaction is a
-#    tuple. Each tuple has the following keys:date, amount,
-#    balance, comment)
+#    tuple. Each tuple has the following keys:
+#            (date, amount, balance, comment)
 # 2. I used datetime internally rather than simply date. Its more overhead
 #    but deposits are established with times earlier in the day than
 #    debits, so they order properly (ie deposits first then withdrawals)
@@ -91,9 +92,9 @@ class CfAnalysis:
             timedelta(days=1)
 
         ##########################################
-        # Establish the balance in each account 
+        # Establish the balance in each cash account
         ##########################################
-        self.account_set_up()
+        self.account_set_up()   # todo - do we set up or calculate a balance in each account
 
         ##########################################
         # Record all the transfers so balances
@@ -185,11 +186,12 @@ class CfAnalysis:
 
     @staticmethod
     def get_bal_on_date(date, reg):
-        """Return the balance of register 'reg' on date 'date'"""
-        # Look for a date beyond 'date' then use the balance of the previous
-        # register entry. This ensures the correct day's balance if there
-        # are multiple entries for the day.
+        """Return the balance of register 'reg' on date 'date'
 
+        Look for a date beyond 'date' then use the balance of the previous
+        register entry. This ensures the correct day's balance if there
+        are multiple entries for the day.
+        """
         if type(date) != datetime or type(reg) != list:
             raise TypeError("{0}(): Input is wrong type".format(util.f_name()))
 
@@ -369,19 +371,22 @@ class CfAnalysis:
         accrued_interest = ratio * rate / 100 * principal
         return bond_cost, accrued_interest
 
-    ####################################################
-    # The following group of functions are to
-    #  support unit test
-    ####################################################
+    ###########################################################
+    # The following group of functions are to support unit test
+    ###########################################################
     def reset_ledger(self):
         """This is used to facilitate unit test"""
         self.ledger.clear()
+        self.accounts.clear()
         self.cash_accounts.clear()
         self.cds.clear()
         self.loans.clear()
         self.bonds.clear()
         self.funds.clear()
         self.transfers.clear()
+
+    def append_accounts(self, entry):
+        self.accounts.append(entry)
 
     def append_cash_accounts(self, entry):
         self.cash_accounts.append(entry)
@@ -391,7 +396,6 @@ class CfAnalysis:
 
     def append_funds(self, entry):
         self.funds.append(entry)
-
 
     def append_cds(self, entry):
         self.cds.append(entry)
@@ -408,14 +412,20 @@ class CfAnalysis:
         else:
             raise ValueError("Unknown account: {0}".format(account))
 
+    ###########################################################
+    # end of unit test support code
+    ###########################################################
+
     def account_set_up(self):
-        """Establish the opening balance of all cash accounts"""
+        """Establish the opening balance of all cash accounts in the ledger"""
 
         for entry in self.cash_accounts:
             #  self.logger.info("{0} account balance on {1}: ${2} ".format(
             #    entry['account'], entry['opening_date'], entry['balance']))
 
-            start_date = datetime.strptime(entry['opening_date'], dfc.DATE_FORMAT)
+            # The account record holds the opening date for the cash account
+            account_rec = self.get_account_rec(entry['account'])
+            start_date = datetime.strptime(account_rec['opening_date'], dfc.DATE_FORMAT)
             start_date = start_date.replace(hour=INITIAL_DEPOSIT_TIME)
 
             # first entry for this account in the ledger - tuple
@@ -494,7 +504,7 @@ class CfAnalysis:
             # Otherwise, just enter a credit on maturity.
 
             opening_date = self.ledger[entry['account']][0][0]
-            origination_date = datetime.strptime(entry['orig_date'], "%Y-%m-%d")
+            origination_date = datetime.strptime(entry['orig_date'], "%Y-%m-%d") # Todo - dfc.DATE_FORMAT
             closing_date = datetime.strptime(entry['payoff_date'], "%Y-%m-%d")
             loan_bal = float(entry['balance'])
 
@@ -715,13 +725,13 @@ class CfAnalysis:
         self.logger.info("Entries in Funds list: {0}".format(len(self.funds)))
 
         for entry in self.funds:
-            opening_date = self.ledger[entry['account']][0][0]
-            if entry['date'] >= opening_date:
-                self.credit(entry['account'],
-                            entry['balance'],
-                            entry['date'],
-                            entry['note'])
-                # TODO - how about interest processing ???
+            entry_date = datetime.strptime(entry['date'], dfc.DATE_FORMAT)
+
+            self.credit(entry['account'],
+                        entry['balance'],
+                        entry_date,
+                        'balance')
+            # TODO - how about interest processing ???
 
     def apply_interest(self):
         """Apply interest to all cash accounts"""
@@ -729,11 +739,11 @@ class CfAnalysis:
         self.logger.info("Entries in Cash Accounts: {0}".
                          format(len(self.cash_accounts)))
         for entry in self.cash_accounts:
-            # account = self.ledger[ entry['account'] ]
             start_date = datetime.strptime(entry['interest_date'], "%Y-%m-%d")
 
-            # push all int payment dates after opening date 
-            opening_date = datetime.strptime(entry['opening_date'], "%Y-%m-%d")
+            # push all int payment dates after opening date
+            account_rec = self.get_account_rec(entry['account'])
+            opening_date = datetime.strptime(account_rec['opening_date'], "%Y-%m-%d")
             months_in_period = self.period_to_months(entry['frequency'])
             while opening_date > start_date:
                 start_date = self.get_next_date(start_date,
@@ -812,6 +822,8 @@ class CfAnalysis:
 
         Note: no dates are included that are beyond the last_date
 
+        Note: this function is also used during unit test
+
         Args
             frequency_spec (str): occurrence specification used to generate
                 date list
@@ -837,17 +849,20 @@ class CfAnalysis:
 		#     to have a cash account.from
 
     def get_sorted_accounts_list(self):
+        """Return a sorted list of accounts.
+
+        The list contains only the Account Name of the account"""
         accounts = list()
-        for key in self.ledger:
-            accounts.append(key)
+
+        for record in self.accounts:
+            accounts.append(record["account"])
         if accounts:
             accounts.sort()
-        #  self.logger.info"{}: Returning {} accounts".format(
-        #    util.f_name(),len(accounts)))
+
         return accounts
 
     def get_accounts(self):
-        """Account info is stored in the cash account records"""
+        """Account info is extracted by the file_manager from the data file"""
         return self.accounts
 
     def get_accounts_with_bond_import_methods(self):
@@ -878,6 +893,65 @@ class CfAnalysis:
             id_map[account['account_id']] = account['account_name']
         return id_map
 
+    def get_account_rec(self, account):
+        for rec in self.accounts:
+            if rec['account'] == account:
+                return rec
+        return None
+
+    def account_create(self, rec):
+        """User has created a new account. Create the corresponding cash account"""
+        ca_rec = dfc.ca_new_rec
+        ca_rec['account'] = rec['account']
+        ca_rec['interest_date'] = rec['opening_date']
+        self.cash_accounts.append(ca_rec)
+
+    def account_delete(self, account):
+        for rec in reversed(self.cash_accounts):
+            if rec['account'] == account:
+                self.cash_accounts.remove(rec)
+        for rec in reversed(self.cds):
+            if rec['account'] == account:
+                self.cds.remove(rec)
+        for rec in reversed(self.loans):
+            if rec['account'] == account:
+                self.loans.remove(rec)
+        for rec in reversed(self.bonds):
+            if rec['account'] == account:
+                self.bonds.remove(rec)
+        for rec in reversed(self.funds):
+            if rec['account'] == account:
+                self.funds.remove(rec)
+        for rec in reversed(self.transfers):
+            if rec['fromAccount'] == account or rec['toAccount'] == account:
+                self.transfers.remove(rec)
+
+    def account_name_changed(self, old_name, new_name):
+        for rec in self.cash_accounts:
+            if rec['account'] == old_name:
+                rec['account'] = new_name
+        for rec in self.cds:
+            if rec['account'] == old_name:
+                rec['account'] = new_name
+        for rec in self.loans:
+            if rec['account'] == old_name:
+                rec['account'] = new_name
+        for rec in self.bonds:
+            if rec['account'] == old_name:
+                rec['account'] = new_name
+        for rec in self.funds:
+            if rec['account'] == old_name:
+                rec['account'] = new_name
+        for rec in self.transfers:
+            if rec['fromAccount'] == old_name:
+                rec['fromAccount'] = new_name
+            if rec['toAccount'] == old_name:
+                rec['toAccount'] = new_name
+
+
+
+
+
     def get_cds(self):
         return self.cds
 
@@ -899,11 +973,10 @@ class CfAnalysis:
     def get_end_date(self):
         return self.end_date
 
-    def \
-            update_account(self, account_id, account_details):
-        """
+    def update_account(self, account_id, account_details):
+        """ todo - when is this called and why is it called - looks like its called from import_account
 
-        :param account_id: accout to update
+        :param account_id: account to update # todo - is this a text string ? account id?
         :param account_details: This is a list of dictionary entries, with each
                 entry containing fields based on the investment type:
 

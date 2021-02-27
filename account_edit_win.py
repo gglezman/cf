@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to edit account data. Account data includes items such as
@@ -35,7 +35,7 @@ class AccountEditWin:
 	"""Edit Account related information.
 
 	This class is used to display/edit account information (not transactions).
-	For example, for a cash account, account name, date, balance, interest,
+	For example, for a cash account the balance, interest,
 	rate, interest payment date and compounding period are editable.
 
 	This module will present current account data and track changes
@@ -133,10 +133,13 @@ class AccountEditWin:
 
 			width (int): is the width, in characters, of the column.
 
-			type (str): widget for the data. possible values include:
-				entry, date (button), combo, checkbutton
+			type (str): type of widget for the data. possible values include:
+				text, entry, date (button), combo, checkbutton
 
 			content:
+			    if type = 'text'
+			        content (str): the style to be used for the field
+
 				if type = "entry"
 					content (str): this field describes how the text in the
 					entry box will be formatted
@@ -218,10 +221,6 @@ class AccountEditWin:
 		############################################################
 		self.win = self.create_top_level(title)
 
-		# todo - take this out
-		self.win.bind("<FocusIn>",self.foucus_in)
-		self.win.bind("<FocusOut>",self.foucus_out)
-
 		if self.filters:
 			self.filter_frame = self.add_filter_frame(self.win)
 			self.filter_widgets = self.add_filter_widgets(self.filter_frame)
@@ -248,14 +247,6 @@ class AccountEditWin:
 		###############################################
 		self.display_accounts()
 
-	# todo - take this out
-	def foucus_in(self, event):
-		print("In focus")
-	def foucus_out(self, event):
-		print("Out of focus")
-		print("Withdrawingt!")
-		#self.win.withdraw()
-
 	def create_top_level(self, title):
 		"""Create the top level window."""
 		win = tk.Toplevel()
@@ -271,7 +262,9 @@ class AccountEditWin:
 										  style="Padded5Ridge.TLabelframe")
 
 	def add_filter_widgets(self, filter_frame):
-		"""Add the filter widgets(combobuttons) to the filter frame."""
+		"""Add the filter widgets(combobuttons) to the filter frame.
+
+		Filters are used to limit the data shown in the window."""
 
 		col = 0
 		row = 0
@@ -590,7 +583,7 @@ class AccountEditWin:
 
 		if not self.actions_menu:
 			# TODO  I think this needs to be adjusted for paging
-			self.actions_menu = ActionsOnInstrument(self,  # AccountEditClass
+			self.actions_menu = ActionsOnInstrument(self,         # AccountEditClass
 													self.parent,  # GUI
 													self.win,     # EditWin
 													self.data_source,
@@ -650,13 +643,20 @@ class AccountEditWin:
 
 	def clean_data_source(self):
 		"""To simplify processing, some additional keys were added to
-		the records. They need to be remomed before the records is written."""
+		the records. They need to be removed before the records is written."""
 
 		for rec in self.data_source:
-			if 'id' in rec:
-				del rec['id']
-			if 'deleteKey' in rec:
-				del rec['deleteKey']
+			self.clean_data_rec(rec)
+
+	def clean_data_rec(self, rec):
+		if 'id' in rec:
+			del rec['id']
+		if 'deleteKey' in rec:
+			del rec['deleteKey']
+		if 'newRecKey' in rec:
+			del rec['newRecKey']
+		if 'accNameChangedKey' in rec:
+			del rec['accNameChangedKey']
 
 	def close_and_update_win(self):
 		"""Close the Account Edit window.
@@ -672,29 +672,47 @@ class AccountEditWin:
 		If there are no validation errors, this method will close the
 		account edit window and write the results to the internal dictionary
 		and to the disk file.
-		If the record is marked for deletion, exclude it from the update.
-		"""
 
+		If the record is marked for deletion, exclude it from the update.
+
+		If the account list is being edited and an account is being
+		deleted, the parent will be informed.
+		(The parent is responsible for deleting associated records.
+		For example, the associated cash account will be deleted. If the
+		account holds bonds, CDs, etc, those records will also be deleted).
+
+		If the account list is being edited and a new account is being added,
+		the parent will be informed. (The parent is responsible for adding
+		any associated records such as the cash account record).
+		"""
 		self.close_subordinate_windows()  # just in case...
 
 		for r_num, rec in enumerate(self.data_source):
-			update_rec_from_widgets(rec, self.column_descriptor,
-									self.account_widgets[r_num])
+			update_rec_from_widgets(rec, self.column_descriptor, self.account_widgets[r_num], self.instrument_type)
 			if self.validate_func:
 				msg = self.validate_func(rec, self.column_descriptor)
 				if msg != "":
 					messagebox.showerror("Data Error", msg)
 					return
 
-		# deal with deleted records
-		# TODO This delete approach does not work for account delete
-		del_list = []
-		for rec in self.data_source:
-			if 'deleteKey' in rec:
-				del_list.append(rec)
-		for rec in del_list:
-			self.data_source.remove(rec)
-
+		# Deal with special record changes:
+		#  . new record in the account list - inform the parent
+		#  . modified account_name in the account list
+		#  . deleted record - exclude it from the data source
+		#                   - if its a record from the account list
+		#                     (ie an account is being deleted) inform the parent
+		for rec in reversed(self.data_source):
+			if 'deleteKey' in rec and not 'newRec' in rec:
+				if self.instrument_type == 'account':
+					# inform the parent an account has been deleted
+					self.parent.account_delete(rec['account'])
+				self.data_source.remove(rec)
+			elif 'newRecKey' in rec and self.instrument_type == 'account' and not 'deleteKey'in rec:
+				self.clean_data_rec(rec)
+				self.parent.account_create(rec)
+			elif 'accNameChangedKey' in rec:
+				self.parent.account_name_changed(rec['accNameChangedKey'], # old name
+				                                rec['account'] )           # new name
 		self.clean_data_source()
 
 		# replace the official data source with the modified
@@ -718,21 +736,30 @@ class AccountEditWin:
 		of the type currently displayed in the account_edit window.
 		"""
 		# keep track of all open NewInstrument windows
+		if self.instrument_type == 'ca':
+			messagebox.showerror("Create Error",
+								 "The cash account can not be directly created. Creating an Account will create the assoicated cash account!")
+			return
+
 		self.new_instrument_windows.append(
 				NewInstrument(self, self.win, self.title,
 							  self.column_descriptor,
-							  self.get_new_rec()))  # empty record
+							  self.get_new_rec(),     # empty record
+							  self.instrument_type))
 
 	def new_instrument_closed(self, new_instrument_obj, new_rec):
 		"""The New Instrument window has closed.
 
-		Assign a rec_id to it and redisplay the account."""
+		Assign a rec_id to it and redisplay the account.
+		Also add a key to identify this as a new record. If its a new
+		account, we'll inform the parent so the cash_account gets created"""
 
 		# remove the new instrument window from the list of open window
 		self.new_instrument_windows.remove(new_instrument_obj)
 
 		if new_rec:
 			new_rec['id'] = self.next_id
+			new_rec['newRecKey'] = 1
 			self.next_id += 1
 			self.data_source.append(new_rec)
 			# generate a new row of widgets
@@ -952,8 +979,8 @@ class ActionsOnInstrument:
 	"""Right click to open a menu for an item in the account frame.
 
 	The actions available depend on the type of instrument. For example,
-	you can "call a bond" from the actions menu or you can delete a
-	cash account"""
+	you can "call a bond" from the actions menu, can delete an
+	account"""
 
 	def __init__(self, accnt_edit, parent, accnt_edit_win,
 				 data_source, id_, instrument_type):
@@ -966,9 +993,9 @@ class ActionsOnInstrument:
 
 		# TODO need to add fund to this list
 
-		description_dict = {'account':"Accounts", 'ca': 'Cash Account', 'bond': 'Bond CUSIP',
-							'cd': 'Certificate of Deposit', 'loan': 'Loan',
-							'transfer': 'Transfer'}
+		description_dict = {'account':"Account", 'ca': 'Cash Account', 'bond': 'Bond CUSIP',
+							'cd': 'Certificate of Deposit', 'loan': 'Loan', 'fund':'Fund Name',
+							'transfer':'Transfer'}
 		description = description_dict[instrument_type]
 
 		################################################
@@ -983,22 +1010,27 @@ class ActionsOnInstrument:
 			delete_text = 'Undelete'
 		else:
 			delete_text = 'Delete'
+
 		cash_flow_details_text = 'Details'
 		details_text = 'Details'
 		analysis_text = 'Analysis'
 		call_text = ''
+
 		if instrument_type == 'account':
-			title = "{}:   {}".format(description, record['account_name'])
+			title = "{}:   {}".format(description, record['account'])
 			delete_text += " account"
 		elif instrument_type == 'ca':
 			title = "{}:   {}".format(description, record['account'])
-			delete_text += " account"
+			delete_text += " cash account"
 		elif instrument_type == 'bond':
 			title = "{}: {}".format(description, record['cusip'])
 			delete_text += " bond record"
 			cash_flow_details_text = 'Bond Cash Flow Details '
 			details_text = 'Bond Details '
 			call_text += 'Bond Call'
+		elif instrument_type == 'fund':
+			title = "{}:  {}".format(description, record['fund'])
+			delete_text += " fund record"
 		elif instrument_type == 'cd':
 			title = "{}: {}".format(description, record['cusip'])
 			delete_text += " CD record"
@@ -1021,7 +1053,7 @@ class ActionsOnInstrument:
 		self.actions_frame = local_util.add_borderless_frame(
 				self.action_win, style='White.TFrame')
 		r = 0
-		# Header
+		# Header (top line)
 		label = ttk.Label(self.actions_frame, text=title,
 						  style='Borderless.TLabel')
 		label.grid(row=r, column=0, sticky='WE')
@@ -1132,9 +1164,15 @@ class ActionsOnInstrument:
 		self.close_actions_win()
 
 	def delete_item(self):
+		if self.instrument_type == 'ca':
+			self.close_actions_win()
+			messagebox.showerror("Delete Error",
+								 "The cash account can not be directly deleted. "\
+								  "Deleting the Account will delete the assoicated cash account!")
+			return
 		if 'deleteKey' in self.data_source[self.id]:
 			# Undelete it
-			del self.data_source[self.id]['deleteKey']
+			del self.data_source[self.id]['deleteKey']           # remove the deleteKey from the record
 			self.account_edit.mark_as_deleted(self.id, False)
 		else:
 			self.data_source[self.id]['deleteKey'] = 1
@@ -1447,8 +1485,7 @@ class BondCall:
 
 
 class NewInstrument:
-	def __init__(self, account_edit_obj, parent_win, title,
-				 column_descriptor, record):
+	def __init__(self, account_edit_obj, parent_win, title, column_descriptor, record, instrument_type):
 		"""Create a new instance of an instrument.
 
 		New is always triggered from AccountEdit, therefore the
@@ -1459,6 +1496,7 @@ class NewInstrument:
 		self.account_edit_obj = account_edit_obj
 		self.column_descriptor = column_descriptor
 		self.rec = record
+		self.instrument_type = instrument_type
 
 		self.tracking_end_date = account_edit_obj.tracking_end_date
 		self.datepicker_windows = {}  # Subordinate windows
@@ -1627,7 +1665,7 @@ class NewInstrument:
 
 		self.close_subordinate_windows()  # just in case...
 
-		update_rec_from_widgets(self.rec, self.column_descriptor, self.widget_row)
+		update_rec_from_widgets(self.rec, self.column_descriptor, self.widget_row, self.instrument_type)
 
 		# Return the new record and signal complete
 		self.account_edit_obj.new_instrument_closed(self, self.rec)
@@ -1672,7 +1710,6 @@ def add_heading_widgets(parent, column_descriptor):
 		headings.append(ttk.Button(parent,
 								   text=column["heading"],
 								   width=column["width"],
-								   # label style on a button!
 								   style='Centered.TLabel'))
 		headings[-1].grid(row=0, column=col, sticky='wens')
 		col += 1
@@ -1685,7 +1722,12 @@ def create_widget_row(frame, rec, column_descriptor, tracking_end_date):
 	widget_list = []
 	for col, column in enumerate(column_descriptor):
 		w = column["width"]
-		if column["type"] == "entry":
+		if column["type"] == 'text':
+			widget_list.append(ttk.Label(frame,
+										 text=rec[column['key']],
+										 width=w,
+										 style=column['content']))
+		elif column["type"] == "entry":
 			# format text prior to inserting
 			fmt = column["content"]
 			text = rec[column['key']]
@@ -1744,17 +1786,24 @@ def create_widget_row(frame, rec, column_descriptor, tracking_end_date):
 	return widget_list
 
 
-def update_rec_from_widgets(rec, column_descriptor, widget_row):
+def update_rec_from_widgets(rec, column_descriptor, widget_row, instrument_type):
 	"""Update the given rec with the content of a widget row.
 
 	A row of widgets is used to hold user changes. Go through the
 	row and collect the current content of each widget to update
-	the record associated with that row"""
+	the record associated with that row.
+
+	We look for changes to the account name if the account list is being edited."""
 
 	for col, column in enumerate(column_descriptor):
 		if column["type"] == "entry":
-			if column["content"] == 'text' or \
-					column["content"] == 'cusip':
+			# watch for account_name changes
+			if instrument_type == 'account' and column['key'] == 'account':
+				# Don't apply the nameChanged key to a new record - one which starts with "" name
+				if rec[column['key']] != widget_row[col].get() and rec[column['key']] != "":
+					rec['accNameChangedKey'] = rec[column['key']]   # save the old name for now
+					rec[column['key']] = widget_row[col].get()       # update with the new name#729
+			if column["content"] == 'text' or column["content"] == 'cusip':
 				rec[column['key']] = widget_row[col].get()
 			else:
 				if widget_row[col].get() == "":
@@ -1768,7 +1817,12 @@ def update_rec_from_widgets(rec, column_descriptor, widget_row):
 		elif column["type"] == "date":
 			if column["content"] == "standard":
 				rec[column['key']] = widget_row[col].cget('text')
-
+		elif column["type"] == "checkbutton":
+			pass     # we don't do anything with bond call buttons here
+		elif column["type"] == "text":
+			pass     # we use a text column type to display unchangeable data
+		else:
+			print("Unknown column type: {}".format(column["type"]))
 
 def get_column_num_by_key(column_desc, key):
 	for col, entry in enumerate(column_desc):

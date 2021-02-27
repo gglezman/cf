@@ -3,7 +3,7 @@
 #
 # SCCSID :  "%W% %G%
 #
-# Copyright (c) 2018 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # To Run: 
 #     python3 -m unitest test_cf.py
@@ -303,8 +303,14 @@ class TestCF(unittest.TestCase):
         rate = 12
         
         cf.reset_ledger()
-        cf.append_cash_accounts({'account': "accntName", "balance": opening_bal,
-                                 'rate': rate, 'opening_date': "2018-01-28", 
+        cf.append_accounts({'account': 'accntName',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
+        cf.append_cash_accounts({'account': "accntName", 
+                                 "balance": opening_bal, 'rate': rate, 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
         cf.restart(self.DEFAULT_TRACKING_MONTHS)
@@ -352,14 +358,18 @@ class TestCF(unittest.TestCase):
 
     def test_cd_purchase_1(self): 
         cf = CfAnalysis()
-
         # Scenario testing
         # - set up an account with some cash and buy a CD
         #   then verify balance after purchase, and interest on maturity
         cf.reset_ledger()
+        cf.append_accounts({'account': 'accntCd',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntCd", 
                                  "balance": 10000, 'rate': 0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
         cf.append_cds({'account': "accntCd", "purchase_price": 1000.0, 
@@ -398,11 +408,23 @@ class TestCF(unittest.TestCase):
         # no compounding
         cf.reset_ledger()
 
+        cf.append_accounts({'account': 'accntLoan',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
+        cf.append_cash_accounts({'account': "accntLoan", 
+                                 "balance": 10000, 'rate': 0, 
+                                 'interest_date': "2018-01-26", 
+                                 'frequency': "monthly", 'note': "note"})
+        '''
         cf.append_cash_accounts({'account': "accntLoan", 
                                  'balance': 10000, 'rate': 0, 
                                  'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
+        '''
         cf.append_loans({'account': "accntLoan", 
                          "balance": 5000.00, 'rate': 3.0, 
                          'orig_date': "2018-02-16", 'payoff_date': "2018-08-15",
@@ -436,9 +458,14 @@ class TestCF(unittest.TestCase):
         # Scenario testing
         # - set up an account with some cash and buy some bonds
         cf.reset_ledger()
+        cf.append_accounts({'account': 'accntBond',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntBond", 
                                  "balance": 100000, 'rate': 0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
         # maturity_date.day > purchase_date.day
@@ -534,11 +561,22 @@ class TestCF(unittest.TestCase):
         # Scenario testing
         # - set up an account with some cash and buy some bonds
         cf.reset_ledger()
+        cf.append_accounts({'account': 'accntBond',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntBond", 
+                                 "balance": 100000, 'rate': 0, 
+                                 'interest_date': "2018-01-26", 
+                                 'frequency': "monthly", 'note': "note"})
+        '''cf.append_cash_accounts({'account': "accntBond", 
                                  "balance": 100000, 'rate': 0, 
                                  'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
+        '''
         # maturity_date.day > purchase_date.day
         cf.append_bonds({'account': "accntBond", 
                          'bond_price': 100, 'quantity': 5, 'coupon': 5, 
@@ -587,9 +625,14 @@ class TestCF(unittest.TestCase):
         # Scenario testing
         # - set up an account with some cash and buy some bonds
         cf.reset_ledger()
+        cf.append_accounts({'account': 'accntBond',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntBond", 
                                  "balance": 100000, 'rate': 0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
         # maturity_date.day > purchase_date.day
@@ -635,9 +678,14 @@ class TestCF(unittest.TestCase):
         # Scenario testing
         # - set up an account with some cash and buy some bonds
         cf.reset_ledger()
+        cf.append_accounts({'account': 'accntBond',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntBond", 
                                  "balance": 100000, 'rate': 0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
         # maturity_date.day > purchase_date.day
@@ -690,12 +738,16 @@ class TestCF(unittest.TestCase):
         # Bad transfer data
         #  expense as a source
         cf.reset_ledger()
+        cf.append_accounts({'account': 'accntRunning',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntRunning", 
                                  "balance": 10000, 'rate': 2.0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
-
         cf.append_transfers({'fromAccount': "expense",
                              'toAccount': "accntRunning", 'date': "2018-01-14",
                              'amount': 100.00, 'frequency': "monthly",
@@ -705,9 +757,14 @@ class TestCF(unittest.TestCase):
 
         #  income as a destination
         cf.reset_ledger()
+        cf.append_accounts({'account': 'accntRunning',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntRunning", 
                                  "balance": 10000, 'rate': 2.0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
 
@@ -720,12 +777,16 @@ class TestCF(unittest.TestCase):
 
         # unknown destination account
         cf.reset_ledger()
+        cf.append_accounts({'account': 'accntRunning',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntRunning", 
                                  "balance": 10000, 'rate': 2.0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
-
         cf.append_transfers({'fromAccount': "income",
                              'toAccount': "garbageAccountName",
                              'date': "2018-01-14", 'amount': 100.00,
@@ -736,9 +797,14 @@ class TestCF(unittest.TestCase):
         # unknown source account
         cf.reset_ledger()
 
+        cf.append_accounts({'account': 'accntRunning',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntRunning", 
                                  "balance": 10000, 'rate': 2.0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
 
@@ -761,9 +827,14 @@ class TestCF(unittest.TestCase):
 
         cf.reset_ledger()
 
+        cf.append_accounts({'account': 'accntRunning',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntRunning", 
                                  "balance": 10000, 'rate': 2.0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
 
@@ -817,16 +888,28 @@ class TestCF(unittest.TestCase):
         cf = CfAnalysis()
         cf.reset_ledger()
 
+        cf.append_accounts({'account': 'accntSrc',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntSrc", 
                                  "balance": 10000, 'rate': 0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
+        
+        cf.append_accounts({'account': 'accntDst',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntDst", 
-                                 "balance": 100, 'rate': 0, 
-                                 'opening_date': "2018-02-28", 
+                                 "balance": 0, 'rate': 0, 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
+
         cf.append_transfers({'fromAccount': "accntSrc",
                              'toAccount': "accntDst", 'date': "2018-01-14",
                              'amount': 100.00,
@@ -878,12 +961,17 @@ class TestCF(unittest.TestCase):
         cf = CfAnalysis()
         cf.reset_ledger()
 
+        cf.append_accounts({'account': 'accntSinking',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntSinking", 
                                  "balance": 10000, 'rate': 0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
-        
+
         cf.append_transfers({'fromAccount': "accntSinking",
                              'toAccount': "expense", 'date': "2018-01-14",
                              'amount': 100.00,
@@ -924,16 +1012,28 @@ class TestCF(unittest.TestCase):
         cf = CfAnalysis()
         cf.reset_ledger()
 
+        cf.append_accounts({'account': 'accntSrc',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntSrc", 
-                                 "balance": 10000, 'rate': 0, 
-                                 'opening_date': "2018-02-28", 
+                                 "balance": 10100, 'rate': 0, 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
+
+        cf.append_accounts({'account': 'accntDst',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntDst", 
                                  "balance": 100, 'rate': 0, 
-                                 'opening_date': "2018-01-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
+
         cf.append_transfers({'fromAccount': "accntSrc",
                              'toAccount': "accntDst", 'date': "2018-01-14",
                              'amount': 100.00,
@@ -987,16 +1087,29 @@ class TestCF(unittest.TestCase):
         cf = CfAnalysis()
         cf.reset_ledger()
 
+        cf.append_accounts({'account': 'accntSrc',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntSrc", 
                                  "balance": 100000, 'rate': 0, 
-                                 'opening_date': "2018-02-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
+
+
+        cf.append_accounts({'account': 'accntDst',
+                            'account_id':'123abc456',
+                            'opening_date': '2018-01-28',
+                            'account_type':'Brokerage',
+                            'update_method':'Manual',
+                            'note': 'note'})
         cf.append_cash_accounts({'account': "accntDst", 
                                  "balance": 100, 'rate': 0, 
-                                 'opening_date': "2018-02-28", 
                                  'interest_date': "2018-01-26", 
                                  'frequency': "monthly", 'note': "note"})
+
         cf.append_transfers({'fromAccount': "accntSrc",
                              'toAccount': "accntDst", 'date': "2018-03-01",
                              'amount': 10.00,
