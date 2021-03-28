@@ -184,7 +184,7 @@ are provisioned to a large number of months. The amount of data shown on the \
 graph can be reduced via the Date Range button.\n\n\
 The start date can neither precede the current date nor be equal to or follow the end date. The end date must be after the start date and can not exceed the end period defined by the Tracking Months. ",
     "About":
-"\nVersion Information: {} 03/10/19\n\n\
+"\nVersion Information: {} 03/26/19\n\n\
 Author: Gregory Glezman".format(dfc.SW_VERSION)
 }
 

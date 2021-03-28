@@ -68,15 +68,196 @@ def data_file_upgrade(filename, file_handle, parent):
             file_handle = upgrade_to_1_20(filename, file_handle, parent, version)
         elif raw_version < get_raw_version(1, 21):
             file_handle = upgrade_to_1_21(filename, file_handle, parent, version)
+        elif raw_version < get_raw_version(1, 22):
+            file_handle = upgrade_to_1_22(filename, file_handle, parent, version)
         else:
             # no further upgrade necessary
             return file_handle
 
+def upgrade_to_1_22(filename, file_handle, parent, old_version):
+    """Upgrade from 1.21 to 1.22.
+    In this upgrade, inflation was added to transfers
+    """
+    new_version = '1.22'
+    data_block = []
+
+    read_file_handle, write_file_handle = common_upgrade_open(
+            filename, file_handle, parent, old_version, new_version)
+
+    #######################
+    # Accounts
+    #######################
+    #########
+    # Read
+    #########
+    read_file_handle = read_block(read_file_handle, data_block)
+    #########
+    # Mods
+    #########
+
+    #########
+    # Write
+    #########
+    write_block(write_file_handle, data_block, dfc.acc_1_22_fieldnames)
+
+    #######################
+    # CAs
+    #######################
+    #########
+    # Read
+    #########
+    read_file_handle = read_block(read_file_handle, data_block)
+    #########
+    # Mods
+    #########
+
+    #########
+    # Write
+    #########
+    write_block(write_file_handle, data_block, dfc.ca_1_22_fieldnames)
+
+    #######################
+    # CDs
+    #######################
+    #########
+    # Read
+    #########
+    read_file_handle = read_block(read_file_handle, data_block)
+    #########
+    # Mods
+    #########
+    for rec in data_block:
+        # force proper type (??)
+        rec['purchase_price'] = float(rec['purchase_price'])
+        rec['quantity'] = float(rec['quantity'])
+        rec['rate'] = float(rec['rate'])
+
+    #########
+    # Write
+    #########
+    write_block(write_file_handle, data_block, dfc.cd_1_22_fieldnames)
+
+    #######################
+    # Loans
+    #######################
+    #########
+    # Read
+    #########
+    read_file_handle = read_block(read_file_handle, data_block)
+    #########
+    # Mods
+    #########
+    for rec in data_block:
+        # force proper type (??)
+        rec['balance'] = float(rec['balance'])
+        rec['rate'] = float(rec['rate'])
+
+    #########
+    # Write
+    #########
+    write_block(write_file_handle, data_block, dfc.loan_1_22_fieldnames)
+
+    #######################
+    # Bonds
+    #######################
+    #########
+    # Read
+    #########
+    data_block.clear()
+    read_file_handle = read_block(read_file_handle, data_block)
+    #########
+    # Mods
+    #########
+    for rec in data_block:
+        # force proper type (??)
+        rec['bond_price'] = float(rec['bond_price'])
+        rec['quantity'] = float(rec['quantity'])
+        rec['coupon'] = float(rec['coupon'])
+        rec['fee'] = float(rec['fee'])
+        rec['call_price'] = float(rec['call_price'])
+        rec['most_recent_price'] = float(rec['most_recent_price'])
+        rec['most_recent_value'] = float(rec['most_recent_value'])
+        rec['est_yield'] = float(rec['est_yield'])
+
+    #########
+    # Write
+    #########
+    write_file_handle.write(str(len(data_block)) + "\n")
+    writer = csv.DictWriter(write_file_handle,
+                            fieldnames=dfc.bond_1_22_fieldnames,
+                            quoting=csv.QUOTE_NONNUMERIC)
+    writer.writeheader()
+    for rec in data_block:
+        writer.writerow(rec)
+
+    #######################
+    # Funds
+    #######################
+
+    #########
+    # Read
+    #########
+    read_file_handle = read_block(read_file_handle, data_block)
+    #########
+    # Mods
+    #########
+    for rec in data_block:
+        # force proper type (??)
+        rec['est_roi'] = float(rec['est_roi'])
+
+    #########
+    # Write
+    #########
+    write_file_handle.write(str(len(data_block)) + "\n")
+    writer = csv.DictWriter(write_file_handle,
+                            fieldnames=dfc.fund_1_22_fieldnames,
+                            quoting=csv.QUOTE_NONNUMERIC)
+    writer.writeheader()
+
+    #######################
+    # Transfers
+    #######################
+    #########
+    # Read
+    #########
+    read_file_handle = read_block(read_file_handle, data_block)
+    #########
+    # Mods
+    #########
+    for rec in data_block:
+        # force proper type (??)
+        rec['amount'] = float(rec['amount'])
+        rec['inflation'] = 0
+
+    #########
+    # Write
+    #########
+    write_block(write_file_handle, data_block, dfc.xfer_1_22_fieldnames)
+
+    #######################
+    # Settings
+    #######################
+    #########
+    # Read
+    #########
+    read_file_handle = read_block(read_file_handle, data_block)
+    #########
+    # Mods - none
+    #########
+
+    #########
+    # Write
+    #########
+    write_block(write_file_handle, data_block, dfc.settings_1_22_fieldnames)
+
+    # clean up and return
+    return common_upgrade_close(read_file_handle, write_file_handle, filename)
+
 
 def upgrade_to_1_21(filename, file_handle, parent, old_version):
     """Upgrade from 1.20 to 1.21.
-    In this upgrade, split CashAccounts into Accounts and Cash Accounts
-    """
+        In this upgrade, split CashAccounts into Accounts and Cash Accounts
+     """
     new_version = '1.21'
     data_block = []
 

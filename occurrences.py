@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to edit account data. Occurrences are used for compounding, transfers, etc.
@@ -184,7 +184,7 @@ class Occurrences:
         Note: no dates are included that are beyond the last_date
 
         Return: 
-            date ( list( datetime) ): a list of dates, in datetime format
+            dates ( list( datetime) ): a list of dates, in datetime format
                 matching the given input
         """
         dates = []  # return value

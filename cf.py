@@ -455,7 +455,11 @@ class CfAnalysis:
                                  format(util.f_name(), entry['fromAccount']))
 
     def process_transfers(self):
-        """Record all transfers to/from accounts based on the transfer list"""
+        """Record all transfers to/from accounts based on the transfer list.
+
+        Note that transfers may have an inflation factor associated with it.
+        If so, the factor is applied before the transfers are entered.
+        """
         self.logger.info("Entries in Transfers list: {0}".
                          format(len(self.transfers)))
 
@@ -463,6 +467,8 @@ class CfAnalysis:
             # Fault if invalid
             self.validate_transfer(entry)
             transfer_dates = self.get_dates(entry['frequency'], self.end_date)
+            transfer_amounts = self.get_inflated_amounts(entry['amount'], entry['inflation'], transfer_dates)
+            #print(transfer_amounts) todo - take this out
 
             if entry['fromAccount'] == "income":
                 opening_date = self.ledger[entry['toAccount']][0][0]
@@ -476,19 +482,19 @@ class CfAnalysis:
                 else:
                     opening_date = self.ledger[entry['toAccount']][0][0]
 
-            for transDate in transfer_dates:
+            for i, transDate in enumerate(transfer_dates):       # todo use an enumeration here to get an index into the list so I can skip old values
                 if transDate >= opening_date:
                     if entry['fromAccount'] != "income":
                         if transDate >= self.ledger[entry['fromAccount']][0][0]:
                             self.debit(entry['fromAccount'],
-                                       float(entry['amount']),
+                                       transfer_amounts[i], # float(entry['amount']),
                                        transDate,
                                        "Transfer to " + entry['toAccount'] +
                                        ", Note: " + entry['note'])
                     if entry['toAccount'] != "expense":
                         if transDate >= self.ledger[entry['toAccount']][0][0]:
                             self.credit(entry['toAccount'],
-                                        float(entry['amount']),
+                                        transfer_amounts[i], # float(entry['amount']),
                                         transDate,
                                         "Transfer from " + entry['fromAccount']
                                         + ", Note: " + entry['note'])
@@ -831,13 +837,40 @@ class CfAnalysis:
             last_date (datetime): last date to track based on tracking months
                 specified in the settings.
 
-        Return: 
+        Return:
             date (list(datetime)): a list of dates, in datetime format
                 matching the given input
         """
         occ = Occurrences(occurrence_spec, last_date)
 
         return occ.get_dates()
+
+    @staticmethod
+    def get_inflated_amounts(amount, inflation, date_list):
+        """Get a list of amounts, which increase by the given inflation rate,
+        for the given list of dates.
+
+        Note the inflation factor is applied on a yearly basis, in the first month
+        of each succeeding year.
+
+        Return:
+            amount_list (list(floats)): a list of inflation corrected amounts,
+                 one for each day in the date_list.
+        """
+        if len(date_list) == 0:
+            return
+
+        year = date_list[0].year
+        amount_list = []
+
+        for date in date_list:
+            next_year = date.year
+            if next_year != year:
+                year= next_year
+                amount = amount+amount*inflation/100
+            amount_list.append(amount)
+
+        return amount_list
 
     def get_cash_accounts(self):
         return self.cash_accounts
@@ -947,9 +980,6 @@ class CfAnalysis:
                 rec['fromAccount'] = new_name
             if rec['toAccount'] == old_name:
                 rec['toAccount'] = new_name
-
-
-
 
 
     def get_cds(self):

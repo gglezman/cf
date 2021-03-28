@@ -14,7 +14,7 @@
 #   . Help - review help text
 #   . Architectural
 #      - I have added funds to the edit menu, the file read and file write
-#      - how to move money from funds to CA -
+#      - how to move money from funds to CA - sell / buy
 #         option 1- sell action on fund: cash goes to sweep account
 #              Issue - the fund menu to not support fund sales (wrong columns)
 #                    solution 1 - add a sell menu item / record same as transfer records
@@ -40,7 +40,7 @@
 #                              should this possibly affect the CA?
 #                         : if fund data iss imported, do we import CA amount as well?
 #                              should this possibly affec the CA?
-#     - sceduled transfers - date sort - I show the next occurrence in the transfer window,
+#     - scheduled transfers - date sort - I show the next occurrence in the transfer window,
 #                                      but it looks like I sort based on the first ocurrence?
 #   . General
 #     - File / Validate Data File
@@ -104,12 +104,6 @@
 #       -  statusBar - number of instruments (eg number of bonds)
 #       -  add a tooltip over Call
 #       -  New Bond - "call" still appears
-#     - Cash Accounts
-#        - delete a cash account.
-#          . The account remains in the account pull down on the button bar
-#          . The account remains in the account pull down on the xfer page
-#          . The entry remains in the ledger
-#          . will also need to verify the account is not listed elsewhere
 #     - CDs
 #       - cash flow details not available
 # ! . In Graph mode,
@@ -135,11 +129,6 @@
 #     Mark a bond deleted   - shows as RED
 #     Add a new bond / Add
 #     Problem - when account list is updated, deleted bond is no longer RED
-#   Scenario II:
-#     Open the Scheduled transfers page
-#     left click on date button to get the modify window
-#     cancel the modify window
-#     right click the date - NOTHING: should bring up a menu
 #
 #   Windows Only
 #    1. When ActionsOnInstrument is open and the AccountEdit window
@@ -723,7 +712,11 @@ class MyMenuBar:
                  "type": "entry", "content": "dollars"},
                 {"heading": "Occurrences", "key": "frequency", "width": dfc.FW_MEDSMALL,
                  "type": "date", "content": "regularity"},
-                {"heading": "Notes", "key": "note", "width": dfc.FW_MED,
+                {"heading": "Inflation", "key":"inflation", "width":dfc.FW_SMALL,
+                "type": "entry", "content":"rate"},
+                {"heading": "", "key": "", "width": dfc.FW_TINY,
+                 "type": "filler", "content": ""},
+                {"heading": "Notes", "key": "note", "width": dfc.FW_MEDLARGE,
                  "type": "entry", "content": "text"}]
             filters = []
             expanded_accnt_set1 = ['All']
@@ -1327,6 +1320,9 @@ class CfGui:
 
     def get_tracking_end_date(self):
         return self.ds.get_end_date()
+
+    def get_inflated_amounts(self, amount, inflation, dates):
+        return self.ds.get_inflated_amounts(amount, inflation, dates)
 
     def get_account_id_map(self):
         return self.ds.get_account_id_map()

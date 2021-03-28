@@ -38,7 +38,7 @@ class AccountEditWin:
 	For example, for a cash account the balance, interest,
 	rate, interest payment date and compounding period are editable.
 
-	This module will present current account data and track changes
+	This module will present current account information and track changes
 	made by the user. If the user accepts the changes they will be
 	written to the actual data source and pushed out to the hard drive.
 	Note that a working copy of the data is made. If the user wishes
@@ -49,12 +49,22 @@ class AccountEditWin:
 
 	The account data is presented through a collection of 'caller defined'
 	widgets (ie combobox, entry boxes, checkbox). These widgets
-	store the changes until the user closes the window.
+	store the changes until the user closes the window. There are two
+	exceptions:
 
-	The exception to the above rule is Occurrences. The widgets involved in
-	storing/presenting portions of the occurrence (ie next_date and regularity)
-	do not store the occurrence itself. Therefore occurrences must be
-	maintained directly in the record.
+	Occurrences Exception: The widgets involved in storing/presenting portions
+	 of the occurrence (ie next_date and regularity) do not store the occurrence
+	itself.	Therefore occurrences must be maintained directly in the record.
+	(The next_date (in the occurrence sequence) and the regularity (eg monthly,
+	yerly) are extracted from the occurrence when needed for display).
+
+	ActionOnInstrument Exception: Some actions on instruments want to be
+	performed on the information the user has entered and is currently stored
+	in the widget. For example, if the user changes the inflation factor in a
+	transfer, the "Transfer Schedule" action on the insturment should reflect
+	the latest inflation factor. For this reason, ActionOnInstrument always
+	pushed the widget content for a given row to the data_source. The actions
+	then us data_source for calculations.
 
 	In order to support filtering and paging (i.e. situations where
 	the display does not present complete account data), the entire
@@ -134,11 +144,11 @@ class AccountEditWin:
 			width (int): is the width, in characters, of the column.
 
 			type (str): type of widget for the data. possible values include:
-				text, entry, date (button), combo, checkbutton
+				text, entry, date (button), combo(box), checkbutton,
 
 			content:
 			    if type = 'text'
-			        content (str): the style to be used for the field
+			        content (str): the TTK style to be used for the field
 
 				if type = "entry"
 					content (str): this field describes how the text in the
@@ -582,10 +592,20 @@ class AccountEditWin:
 		"""
 
 		if not self.actions_menu:
+			# ##################################################################
+			# Update the data in data_source to reflect the current content of
+			# the widget. This is done so that any actions performed on the
+			# instrument have latest data provided by the user (e.g user changes
+			# inflation and wants to see the transfer schedule)
+			# ##################################################################
+			update_rec_from_widgets(self.data_source[id_],
+													 self.column_descriptor,
+													 self.account_widgets[id_],
+													 self.instrument_type)
 			# TODO  I think this needs to be adjusted for paging
-			self.actions_menu = ActionsOnInstrument(self,         # AccountEditClass
+			self.actions_menu = ActionsOnInstrument(self,         # AccountEditWin Class
 													self.parent,  # GUI
-													self.win,     # EditWin
+													self.win,     # Top Level EditWin
 													self.data_source,
 													id_,  # record id
 													self.instrument_type)
@@ -697,7 +717,7 @@ class AccountEditWin:
 
 		# Deal with special record changes:
 		#  . new record in the account list - inform the parent
-		#  . modified account_name in the account list
+		#  . modified account_name in the account list - inform parent
 		#  . deleted record - exclude it from the data source
 		#                   - if its a record from the account list
 		#                     (ie an account is being deleted) inform the parent
@@ -814,11 +834,11 @@ class AccountEditWin:
 
 			# create and add the occurrence win to the list of open windows
 			self.occurrence_windows[token] = OccurrenceWin(
-					self,  # caller
-					"Occurrences",  # title
-					spec,  # occurrence spec
+					self,             # caller
+					"Occurrences",    # title
+					spec,             # occurrence spec
 					self.tracking_end_date,  # last date
-					token,  # opaque data
+					token,            # opaque data
 					master=self.win)  # for centering
 
 	def OccurrenceWin_return(self, occurrence_spec, token):
@@ -833,7 +853,7 @@ class AccountEditWin:
 				col = token[1]
 
 				# writing data updates back to the source record usually
-				# occurs on close. Occurrences are the exception since the
+				# occurs on close. Occurrences are an exception since the
 				# widgets involved don't hold an occurrence.
 				self.data_source[id_][self.column_descriptor[col]['key']] = \
 					occurrence_spec
@@ -984,9 +1004,9 @@ class ActionsOnInstrument:
 
 	def __init__(self, accnt_edit, parent, accnt_edit_win,
 				 data_source, id_, instrument_type):
-		self.account_edit = accnt_edit
-		self.parent = parent  # GUI
-		self.parent_win = accnt_edit_win
+		self.account_edit = accnt_edit         # AccEditWin Class
+		self.parent = parent                   # GUI
+		self.parent_win = accnt_edit_win       # top level Edit window
 		self.data_source = data_source
 		self.id = id_
 		self.instrument_type = instrument_type
@@ -1041,6 +1061,7 @@ class ActionsOnInstrument:
 		elif instrument_type == 'transfer':
 			title = "{}: {}".format(description, record['note'])
 			delete_text += " transfer request"
+			amounts_text = " Transfer Schedule"
 		else:
 			raise TypeError("Unknown Instrument Type:{}".format(
 					instrument_type))
@@ -1115,6 +1136,18 @@ class ActionsOnInstrument:
 									  borderwidth=0,
 									  command=self.bond_call)
 			call_butt.grid(row=r, column=0, sticky='W')
+			r += 1
+		if instrument_type == 'transfer':
+			if platform.system() == 'Linux':
+				amounts_butt = ttk.Button(self.actions_frame, text=amounts_text,
+				                          style='Borderless.TButton',
+										  command=self.get_inflated_amounts)
+			else:
+				amounts_butt = tk.Button(self.actions_frame, text=amounts_text,
+										 background='white',
+									     borderwidth=0,
+									     command=self.get_inflated_amounts)
+			amounts_butt.grid(row=r, column=0, sticky='W')
 			r += 1
 
 		if platform.system() == 'Linux':
@@ -1268,6 +1301,36 @@ class ActionsOnInstrument:
 		self.account_edit.bond_call_windows.append(
 				BondCall(self.account_edit, self.parent_win,
 						 self.data_source[self.id], col, self.id))
+
+		self.close_actions_win()
+
+	def get_inflated_amounts(self):
+		"""Get a list of transfer amounts associated with the current record.
+		   Inflate the amounts based on the inflation factor.
+	       Use the dates specified in the current record.
+	    """
+		transfer_spec = self.data_source[self.id]
+
+		end_date = self.parent.get_tracking_end_date()  # todo - take this out
+		end_date = self.account_edit.tracking_end_date
+		occ = Occurrences(transfer_spec['frequency'], end_date)
+		dates = occ.get_dates()
+		current_year = dates[0].year
+
+		amounts = self.parent.get_inflated_amounts(transfer_spec['amount'], transfer_spec['inflation'], occ.get_dates())
+
+		text = ""
+		if len(dates) == len(amounts):
+			for i, date in enumerate(dates):
+				if date.year != current_year:
+					text += '\n'
+					current_year = date.year
+				text += "{}  ".format(date.strftime(dfc.DATE_FORMAT))
+				text += "${:,.2f}\n".format(amounts[i])
+		else:
+			text = "Error - length mismatch on dates and amounts"
+
+		ScrollableWin("Transfer Schedule", text, self.parent_win)
 
 		self.close_actions_win()
 
@@ -1780,6 +1843,9 @@ def create_widget_row(frame, rec, column_descriptor, tracking_end_date):
 			else:
 				raise TypeError("Unknown checkbutton subtype: {}".format(
 						column["content"]))
+		elif column["type"] == "filler":
+			widget_list.append(ttk.Label(frame,
+										  width=w))
 		else:
 			raise TypeError("Unknown widget type: {}".format(
 					column["type"]))
@@ -1821,6 +1887,8 @@ def update_rec_from_widgets(rec, column_descriptor, widget_row, instrument_type)
 			pass     # we don't do anything with bond call buttons here
 		elif column["type"] == "text":
 			pass     # we use a text column type to display unchangeable data
+		elif column["type"] == "filler":
+			pass     # filler is just a spacer
 		else:
 			print("Unknown column type: {}".format(column["type"]))
 

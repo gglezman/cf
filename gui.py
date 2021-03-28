@@ -49,11 +49,11 @@ class TextFrame:
         self.text.insert(tk.END, header)
 
         for record in accnt_data:
-            transaction = "{0:10} {1:12.2f} {2:12.2f} {3} {4}\n".format(
+            transaction = "{:10} {:12,.2f} {:12,.2f}      {}\n".format(
+            #transaction="{0:10} {1:12.2f} {2:12.2f} {3} {4}\n".format(
                     self.parent.format_date(record[0]),
                     record[1],
                     record[2],
-                    "    ",
                     record[3])
             self.text.insert(tk.END, transaction)
 
@@ -128,7 +128,7 @@ class ButtonFrame:
                                            width=8)
         self.granularity_cb.bind('<<ComboboxSelected>>',
                                  self.granularity_selected)
-        # TODO - select monthly
+        # <TODO - select monthly
         self.granularity_cb.current(1)
 
         self.granularity = "Monthly"  # default granularity

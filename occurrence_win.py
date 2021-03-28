@@ -3,7 +3,7 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2019-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to an occurrence.  An occurrence represents how often and for how long
@@ -30,11 +30,11 @@ days_of_month = ['NA', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th',
                  '30th', '31st']
 
 if platform.system() == 'Linux':
-    WIN_HEIGHT = 143
+    WIN_HEIGHT = 155
     WIN_WIDTH = 460
 else:
-    WIN_HEIGHT = 155
-    WIN_WIDTH = 455
+    WIN_HEIGHT = 180
+    WIN_WIDTH = 475
 
 
 class OccurrenceWin:
@@ -57,14 +57,6 @@ class OccurrenceWin:
         self.current_end_date_type = None
 
         self.datepicker_windows = {}
-
-        # all rows use the same width for the first 2 columns.  Looks better
-        if platform.system() == 'Linux':
-            self.FIRST_COL_WIDTH = 8
-            self.SECOND_COL_WIDTH = 11
-        else:
-            self.FIRST_COL_WIDTH = 10
-            self.SECOND_COL_WIDTH = 14
 
         ###############################################
         # The window...
@@ -112,15 +104,16 @@ class OccurrenceWin:
         ttk.Label(frame,
                   style='Padded.TLabel',
                   text="Start Date:",
-                  width=self.FIRST_COL_WIDTH).grid(row=row, column=col)
+                  width=dfc.FW_OCC_FIRST_COL).grid(row=row, column=col)
         col += 1  # datepicker
         self.start_date_butt = ttk.Button(
                 frame,
                 text=occ.get_start_date(),
-                width=self.SECOND_COL_WIDTH,
+                width=dfc.FW_OCC_SECOND_COL,
                 style='Special.Thin.TButton')
         self.start_date_butt.configure(
                 command=lambda token='start': self.open_datepicker(token))
+
         self.start_date_butt.grid(row=row, column=col)
 
     def add_regularity_widgets(self, frame, occ):
@@ -153,11 +146,11 @@ class OccurrenceWin:
         ttk.Label(frame,
                   style='Padded.TLabel',
                   text="How Often:",
-                  width=self.FIRST_COL_WIDTH).grid(row=row, column=col)
+                  width=dfc.FW_OCC_FIRST_COL).grid(row=row, column=col)
         col += 1
         self.regularity = ttk.Combobox(frame,
                                        style='Special.TCombobox',
-                                       width=self.SECOND_COL_WIDTH)
+                                       width=dfc.FW_OCC_SECOND_COL)
         self.regularity.grid(row=row, column=col)
         self.regularity['values'] = Occurrences.regularities_list
         self.regularity.set(occ.get_regularity())
@@ -301,12 +294,12 @@ class OccurrenceWin:
         ttk.Label(frame,
                   style='Padded.TLabel',
                   text="End Date:",
-                  width=self.FIRST_COL_WIDTH).grid(row=0, column=col)
+                  width=dfc.FW_OCC_FIRST_COL).grid(row=0, column=col)
 
         col += 1
         self.end_date_type = ttk.Combobox(frame,
                                           # style='Special.TCombobox',
-                                          width=self.SECOND_COL_WIDTH)
+                                          width=dfc.FW_OCC_SECOND_COL)
         self.end_date_type.grid(row=0, column=col)
         # active selection is made later
         self.end_date_type['values'] = ["No End Date", "End On", "End After"]
@@ -362,7 +355,7 @@ class OccurrenceWin:
                 self.end_date_butt = ttk.Button(
                         frame,
                         text=end_date.date().date(),  # end_date.date() is a datetime
-                        width=self.SECOND_COL_WIDTH,
+                        width=dfc.FW_OCC_SECOND_COL,
                         style='Special.Thin.TButton')
                 self.end_date_butt.configure(
                         command=lambda token='end': self.open_datepicker(token))
