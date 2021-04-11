@@ -3,10 +3,11 @@
 #
 # SCCSID : "%W% %G%
 #
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to import data from other sources. (Notably brokerage houses and banks)
+# This file contains the code to process the imported files.
 
 import csv
 import re
@@ -24,341 +25,257 @@ import utils as local_util
 # added to the following List. This list is used when
 # presenting Import methods for Edit/ Account
 #########################################################
-ImportMethodsSupported = ["Manual", "Fidelity Export", "Kearny Download",
+ImportMethodsSupported = ["Manual", "Fidelity Download", "Kearny Download",
                           "Cap1 Download"]
 
+def process_fidelity_account_download(file_handle, account_id):
+    """ Process an exported Fidelity File
 
-class ImportAccountsWin:
-    """Open the Import Accounts Data window.
+    PORTFOLIO IMPORT
+    ----------------
+    We are looking for a specific portfolio file - use the following procedure
+    to obtain the file:
+       At the Fidelity Web site landing page,
+         Click on the All Accounts block (contains the portfolio total)
+         Click on Positions tab
+         Click on the Download button
+       The correct file will contain all the expected keys listed below.
 
-    This window will present a list of accounts that have defined
-    import methods. The user can import data for any account in the list.
-    On close the data is then fed back to the database for storage.
-    
-    :param parent: cf_gui
-    :param accounts: list of accounts which have an update_method defined.
-        Each entry in the list is a dictionary with the following keys:
-        {'account', 'account_id', 'update_method'}.
+
+    Return - None
     """
-    def __init__(self, parent, accounts):
-        self.parent = parent
-        self.accounts = accounts
-        self.cf_gui = parent.parent
+    reader = csv.DictReader(file_handle)
 
-        ###############################################
-        # The window...
-        ###############################################
-        self.win = tk.Toplevel()
-        self.win.title("Import Account Data")
-        self.win.protocol("WM_DELETE_WINDOW", self.cancel_win)
+    if is_file_fidelity_portfolio_file(reader):
+        process_fidelity_portfolio_file(reader, account_id)
+    else:
+        # todo - beef up this error message
+        messagebox.showerror("Import Warning",
+                             "Unknown File Format")
 
-        ###############################################
-        # Create the Frames
-        ###############################################
-        self.accounts_frame = local_util.add_frame(self.win)
-        self.controls_frame = local_util.add_controls_frame(self.win)
-        self.button_frame = local_util.add_button_frame(self.controls_frame)
+def is_file_fidelity_portfolio_file(csv_reader):
+    """Determine if the given file is a Fidelity Portfolio download.
+    If it is, it will have a specific set of keys
 
-        ###############################################
-        # Fill the frames
-        ###############################################
-        self.add_accounts(self.accounts_frame, accounts)
-        self.add_control_buttons(self.button_frame, )
+    Retun True or False
+    """
+    expected_keys = [
+        "Account Name/Number",
+        "Symbol",
+        "Description",
+        "Quantity",
+        "Last Price",
+        "Last Price Change",
+        "Current Value",
+        "Today's Gain/Loss Dollar",
+        "Today's Gain/Loss Percent",
+        "Total Gain/Loss Dollar",
+        "Total Gain/Loss Percent",
+        "Cost Basis Per Share",
+        "Cost Basis Total",
+        "Type"]
 
-    def add_accounts(self, frame, accounts):
-        """Add the given accounts to the frame
+    fieldnames = csv_reader.fieldnames
+    for key in expected_keys:
+        if key not in fieldnames:
+            return False
+    return True
 
-        Each row includes The name, account number and an import button.
-        A function is assigned to each button, and the function is
-        invoked with the corresponding row number when the button is depressed.
-        
-        :param frame: to fill in
-        :param accounts: list of accounts to place in frame
-        :return: None
-        """
-        row = 0
-        col = 0
-        ttk.Label(frame,
-                  text="Account Name",
-                  width=dfc.FW_MED,
-                  style='Centered.TLabel').grid(row=row, column=col)
-        col += 1
-        ttk.Label(frame,
-                  text="Account Id",
-                  width=dfc.FW_SMALL,
-                  style='Centered.TLabel').grid(row=row, column=col)
-        col += 1
-        ttk.Label(frame,
-                  text="Action",
-                  width=dfc.FW_SMALL,
-                  style='Centered.TLabel').grid(row=row, column=col)
+def process_fidelity_portfolio_file(reader, account_id):
+    """Process a Fidelity Portfolio file.
 
-        for rec in accounts:
-            row += 1
-            col = 0
-            ttk.Label(frame,
-                      text=rec['account'],
-                      width=dfc.FW_MED,
-                      style='ThinLeft.TLabel').grid(row=row, column=col)
-            col += 1
-            ttk.Label(frame,
-                      text=rec['account_id'],
-                      width=dfc.FW_SMALL,
-                      style='ThinLeft.TLabel').grid(row=row, column=col)
-            col += 1
-            ttk.Button(frame, text='Import',
-                       style='Thin.TButton',
-                       command=lambda entry=row-1: self.import_account(entry)).\
-                grid(row=row, column=col)
+    The file will contain records for each element of the portfolio.
+    Funds, bonds,...
+    Categorize each input record and generate a record for the local database
+    then append it as necessary
+    """
+    for entry in reader:
+        if entry['Account Name/Number'] == account_id:
+            instrument_type = classify_instrument(entry)
+            if instrument_type == 'bond':
+                rec = process_fidelity_bond_rec_in_portfolio(entry)
+                #append rec to bond ;ist
+                print("Bond : {}".format(rec))
+            elif instrument_type == 'fund':
+                rec = process_fidelity_fund_rec_in_portfolio(entry)
+                # append rec to fund list
+                print("fund : {}".format(rec))
+            elif instrument_type == 'ca':
+                rec = process_fidelity_ca_rec_in_portfolio(entry)
+                # append rec to list
+                print("cs : {}".format(rec))
+            else:
+                print(entry)
+                messagebox.showerror("Import Warning",
+                                     "Unknown Record in Import File")
+                print(rec)
+    return
 
-    def add_control_buttons(self, frame):
-        """
-
-        :param frame: to fill in
-        :return: None
-        """
-        close_butt = ttk.Button(frame, text='close',
-                                style='Medium.TButton',
-                                command=self.cancel_win)
-        close_butt.pack(side=tk.RIGHT)
-
-    def cancel_win(self):
-        """User has decided to Close the Import Accounts Window.
-
-        Close up and signal caller that the window is closed."""
-        # self.close_subordinate_windows()  # just in case...
-
-        self.parent.ImportAccountsWin_return()
-
-        self.win.destroy()
-
-    def import_account(self, entry_num):
-        """User has selected an account to import.
-
-         This function is invoked when the user hits the import button.
-         This function will dispatch the appropriate method based on the
-         update_method defined for the account.
-        :param entry_num: index into the accounts
-        list of account to import
-        :return: None
-        """
-        account = self.accounts[entry_num]
-
-        if self.accounts[entry_num]['update_method'] == "Fidelity Export":
-            account_details = self.parent.parent.get_file_manager().\
-                open_account_import(
-                    self.process_fidelity_account_import, account['account_id'])
-            self.cf_gui.update_account(account['account_id'], account_details)
-
-        elif self.accounts[entry_num]['update_method'] == "Kearny Download":
-            account_details = self.parent.parent.get_file_manager(). \
-                open_account_import(
-                    self.process_kearny_account_download, account['account_id'])
-            self.cf_gui.update_account(account['account_id'], account_details)
-
-        elif self.accounts[entry_num]['update_method'] == "Cap1 Download":
-            account_details = self.parent.parent.get_file_manager(). \
-                open_account_import(
-                    self.process_cap1_account_download, account['account_id'])
-            self.cf_gui.update_account(account['account_id'], account_details)
-
-        else:
-            messagebox.showerror("Import Error",
-                                 "Unknown account update method: '{}'".format(
-                                     self.accounts[entry_num]['update_method']))
-            self.cf_gui.log(logging.ERROR,
-                            "Import Error: Unknown account update method: '{}'".format(
-                                self.accounts[entry_num]['update_method']))
-
-    def process_fidelity_account_import(self, file_handle, account_id):
-        """ """
-        # "Account Name/Number"
-        # "Symbol",
-        # "Description",
-        # "Quantity",
-        # "Last Price",
-        # "Last Price Change",
-        # "Current Value",
-        # "Today's Gain/Loss Dollar",
-        # "Today's Gain/Loss Percent",
-        # "Total Gain/Loss Dollar",
-        # "Total Gain/Loss Percent","
-        # Cost Basis Per Share",
-        # "Cost Basis Total","
-        # Type"
-
-        account_details = []
-        reader = csv.DictReader(file_handle)
-        try:
-            for entry in reader:
-                if entry['Account Name/Number'] == account_id:
-                    # classify the entry
-                    new_entry = {}
-                    new_entry['investment_type'] = self.classify_instrument(entry)
-                    new_entry['date'] = date.today().strftime(dfc.DATE_FORMAT)
-                    new_entry['symbol'] = entry['Symbol']
-                    new_entry['description'] = entry['Description']
-                    new_entry['value'] = entry['Current Value'].replace('$', '')
-                    new_entry['quantity'] = entry['Quantity']
-                    account_details.append(new_entry)
-
-        except KeyError:
-            messagebox.showerror("Account Error", "Incorrect File Format")
-            self.cf_gui.log(logging.ERROR, "Account Error, Incorrect File Format")
-
-        if len(account_details) == 0:
-            messagebox.showerror("Import Warning",
-                                 "There are no records in the imported file")
-        return account_details
-
-    def process_kearny_account_download(self, file_handle, account_id):
-        """ Procedure for downloading from kearny.
-        login, click on the high Yield Checking, click on Download
-             Current Statement
-             .csv
-        """
-        # "Account"
-        # "ChkRef"
-        # "Debit"
-        # "Credit"
-        # "Balance"
-        # "Date"
-        # "Description
-
-        account_details = []
-        reader = csv.DictReader(file_handle)
-        entry = reader.__next__()
-        try:
-            if entry['Account'] == account_id:
-                # this is strictly a cash account
-                entry['investment_type'] = 'ca'
-                entry['symbol'] = "NOSYM"
-                entry['date'] = entry['Date']
-                entry['description'] = "Checking Balance"
-                entry['value'] = entry['Balance']
-                account_details.append(entry)
-
-        except KeyError:
-            messagebox.showerror("Account Error", "Incorrect File Format")
-            self.cf_gui.log(logging.ERROR, "Account Error, Incorrect File Format")
-
-        if len(account_details) == 0:
-            messagebox.showerror("Import Warning",
-                                 "There are no records in the imported file")
-        return account_details
-
-    def process_cap1_account_download(self, file_handle, account_id):
-        """ Procedure for downloading from cap 1.
-        login, click on the Cap 360 Money Mkt account, click on Download
-        .csv
-        30 days
-        """
-        #  Account Number,
-        #  Transaction Date,
-        #  Transaction Amount,
-        #  Transaction Type,
-        #  Transaction Description,
-        #  Balance
-
-        account_details = []
-        reader = csv.DictReader(file_handle)
-        entry = reader.__next__()
-        try:
-            # The download specifies only the last 4 chars in the account #
-            if entry['Account Number'] == account_id[-4:]:
-                # this is strictly a cash account
-                entry['investment_type'] = 'ca'
-                entry['symbol'] = "NOSYM"
-                entry['date'] = date.today().strftime(dfc.DATE_FORMAT)
-                entry['description'] = "Money Market Balance"
-                entry['value'] = entry['Balance']
-                account_details.append(entry)
-
-        except KeyError:
-            messagebox.showerror("Import Error", "Incorrect File Format")
-            self.cf_gui.log(logging.ERROR, "Import Error, Incorrect File Format")
-
-        if len(account_details) == 0:
-            messagebox.showerror("Import Warning",
-                                 "There are no records in the imported file")
-        return account_details
-
-    def classify_instrument(self, instrument):
-        """Classify the investment instrument by its symbol.
-
-        :param instrument: Dictionary including {symbol}
-        :return: "ca","fund","bnd","Unknown"
-        """
-        symbol = instrument['Symbol']
-
-        match_obj = re.match(r".*\*\*", symbol)
-        if match_obj is not None:
-            return "ca"
-
-        match_obj = re.match("[A-Z]{4}X", symbol)
-        if match_obj is not None:
-            return "fund"    # mutual fund
-
-        match_obj = re.match("[A-Z]{3,4}", symbol)
-        if match_obj is not None:
-            return "fund"    # stock/EFT
-
-        match_obj = re.match("[0-9][A-Z0-9]{6,8}", symbol)
-        if match_obj is not None:
-            return "bond"
-        else:
-            messagebox.showerror("Import Error",
-                                 "Unclassifiable symbol: {}".format(symbol))
-            self.cf_gui.log(logging.ERROR,
-                            "Import Error: Unclassifiable symbol: {}".format(symbol))
-            return "unknown"
+def process_fidelity_bond_rec_in_portfolio(bond):
+    """
+    How to reconcile a list of bonds in this file with what's already in the DB?
+      - If the download matches what's in the DB - no change
+      - If download > DB
+            create a new record for the remainder with the current date (?)
+      - if download < DB
+            assume bonds have been sold and use the first in / first out methodology
 
 
-class ImportBondDetailsWin:
-    def __init__(self, parent, accounts):
-        self.parent = parent
+    :param bond:
+    :return:
+    """
 
-        ###############################################
-        # The window...
-        ###############################################
-        self.win = tk.Toplevel()
-        self.win.title("Import Bond Detail")
-        self.win.protocol("WM_DELETE_WINDOW", self.cancel_win)
+    bond_key_map = [
+        {'fid_key': 'Account Name/Number', 'local_key': 'account'},
+        {'fid_key': 'Symbol', 'local_key': 'cusip'},
+        {'fid_key': 'Description', 'local_key': 'issuer'},
+        {'fid_key': 'Quantity', 'local_key': 'quantity'},
+        {'fid_key': 'Last Price', 'local_key': 'most_recent_price'},
+        # {'fid_key':'Current Value', 'local_key':'},
+    ]
+    rec = {}
+    for key_set in bond_key_map:
+        # the general case
+        rec[key_set['local_key']] = bond[key_set['fid_key']]
 
-        ###############################################
-        # Create the Frames
-        ###############################################
-        self.import_frame = local_util.add_frame(self.win)
-        self.accounts_frame = local_util.add_borderless_frame(
-            self.import_frame, i_pad=(2, 4))
-        self.controls_frame = local_util.add_controls_frame(self.win)
-        self.button_frame = local_util.add_button_frame(self.controls_frame)
+        if key_set['fid_key'] == 'Account Name/Number':
+            # todo - map to account name
+            rec[key_set['local_key']] = bond[key_set['fid_key']]
+        elif key_set['fid_key'] == 'Description':
+            # name, coupon, maturity date
+            match_obj = re.match("(.*) ([0-9]{1,2}.[0-9]*)% ([0-9]{2})/([0-9]{2})/([0-9]{4})",
+                                  bond[key_set['fid_key']])
+            rec[key_set['local_key']] = match_obj.group(1)   # cleaned up description
+            rec['coupon'] = match_obj.group(2)
+            rec['maturity_date'] = match_obj.group(5) + "-" + match_obj.group(4) + "-" +match_obj.group(3)
+            """
+            # todo - remove the following 
+            print(match_obj.group(3))   # month
+            print(match_obj.group(4))  # day
+            print(match_obj.group(5))  # year
+            year = re.sub("^0+", "", match_obj.group(5))      # remove leading zeros
+            rec['maturity_date'] = datetime(int(year),
+                                            int(match_obj.group(3)),
+                                            int(match_obj.group(4)))
+            """
+    return rec
 
-        ###############################################
-        # Fill the frames
-        ###############################################
-        self.add_accounts(self.accounts_frame, accounts)
-        self.add_control_buttons(self.button_frame, )
+def process_fidelity_fund_rec_in_portfolio(entry):
+    pass
+def process_fidelity_ca_rec_in_portfolio(entry):
+    pass
 
-    def add_accounts(self, frame, accounts):
-        pass
+def process_kearny_account_download(file_handle, account_id):
+    """ Procedure for downloading from kearny.
+    login, click on the high Yield Checking, click on Download
+         Current Statement
+         .csv
+    """
+    # "Account"
+    # "ChkRef"
+    # "Debit"
+    # "Credit"
+    # "Balance"
+    # "Date"
+    # "Description
 
-    def add_control_buttons(self, frame):
-        close_butt = ttk.Button(frame, text='close',
-                                style='Medium.TButton',
-                                command=self.cancel_win)
-        close_butt.pack(side=tk.RIGHT)
+    account_details = []
+    reader = csv.DictReader(file_handle)
+    entry = reader.__next__()
+    try:
+        if entry['Account'] == account_id:
+            # this is strictly a cash account
+            entry['investment_type'] = 'ca'
+            entry['symbol'] = "NOSYM"
+            entry['date'] = entry['Date']
+            entry['description'] = "Checking Balance"
+            entry['value'] = entry['Balance']
+            account_details.append(entry)
 
-    def cancel_win(self):
-        """User has decided to Cancel. Close up and signal caller"""
-        # self.close_subordinate_windows()  # just in case...
+    except KeyError:
+        messagebox.showerror("Account Error", "Incorrect File Format")
+        self.cf_gui.log(logging.ERROR, "Account Error, Incorrect File Format")
 
-        self.parent.ImportBondDetailsWin_return()
+    if len(account_details) == 0:
+        messagebox.showerror("Import Warning",
+                             "There are no records in the imported file")
+    return account_details
 
-        self.win.destroy()
+
+def process_cap1_account_download(file_handle, account_id):
+    """ Procedure for downloading from cap 1.
+    login, click on the Cap 360 Money Mkt account, click on Download
+    .csv
+    30 days
+    """
+    #  Account Number,
+    #  Transaction Date,
+    #  Transaction Amount,
+    #  Transaction Type,
+    #  Transaction Description,
+    #  Balance
+
+    account_details = []
+    reader = csv.DictReader(file_handle)
+    entry = reader.__next__()
+    try:
+        # The download specifies only the last 4 chars in the account #
+        if entry['Account Number'] == account_id[-4:]:
+            # this is strictly a cash account
+            entry['investment_type'] = 'ca'
+            entry['symbol'] = "NOSYM"
+            entry['date'] = date.today().strftime(dfc.DATE_FORMAT)
+            entry['description'] = "Money Market Balance"
+            entry['value'] = entry['Balance']
+            account_details.append(entry)
+
+    except KeyError:
+        messagebox.showerror("Import Error", "Incorrect File Format")
+        self.cf_gui.log(logging.ERROR, "Import Error, Incorrect File Format")
+
+    if len(account_details) == 0:
+        messagebox.showerror("Import Warning",
+                             "There are no records in the imported file")
+    return account_details
+
+
+def classify_instrument(instrument):
+    """Classify the investment instrument by its symbol.
+
+    :param instrument: Dictionary including {symbol}
+    :return: "ca","fund","bnd","Unknown"
+    """
+    symbol = instrument['Symbol']
+
+    match_obj = re.match(r".*\*", symbol)
+    if match_obj is not None:
+        return "ca"
+
+    match_obj = re.match("[A-Z]{4}X", symbol)
+    if match_obj is not None:
+        return "fund"  # mutual fund
+
+    match_obj = re.match("[A-Z]{3,4}", symbol)
+    if match_obj is not None:
+        return "fund"  # stock/EFT
+
+    match_obj = re.match("[0-9][A-Z0-9]{6,8}", symbol)
+    if match_obj is not None:
+        return "bond"
+    else:
+        messagebox.showerror("Import Error",
+                             "Unclassifiable symbol: {}".format(symbol))
+        self.cf_gui.log(logging.ERROR,
+                        "Import Error: Unclassifiable symbol: {}".format(symbol))
+        return "unknown"
 
 
 class ImportFidelityBondList:
+    """This class is used to process a Fidelity Bond csv file.
+
+    To use this, create the class, call the process member them cal the get_
+     member. The latter will return a lists of bonds in the file.
+     """
     FID_FORMAT = "%m/%d/%Y"
 
     def __init__(self, account_id_to_account_map):
@@ -386,19 +303,19 @@ class ImportFidelityBondList:
         4. compounding
         """
         #  mapping  (Fidelity_key, CF_Key)
-        key_map = [{'import': 'CUSIP', 'rec': 'cusip'},
-                   {'import': 'Description', 'rec': 'issuer'},
-                   {'import': 'Coupon', 'rec': 'coupon'},
-                   {'import': 'Maturity', 'rec': 'maturity_date'},
-                   {'import': 'Account', 'rec': 'account'},
-                   {'import': 'Most Recent Price', 'rec': 'most_recent_price'},
-                   {'import': "Moody's Rating", 'rec': 'moodys_rating'},
-                   {'import': 'Product Type', 'rec': 'product_type'},
-                   {'import': 'S&P Rating', 'rec': 's&p_rating'},
-                   {'import': 'Most Recent Value', 'rec': 'most_recent_value'},
-                   {'import': 'QTY', 'rec': 'quantity'},
-                   {'import': 'Call Date', 'rec': 'next_call_date'},
-                   {'import': 'Estimated Yield', 'rec': 'est_yield'},
+        key_map = [{'fid_key': 'CUSIP', 'local_key': 'cusip'},
+                   {'fid_key': 'Description', 'local_key': 'issuer'},
+                   {'fid_key': 'Coupon', 'local_key': 'coupon'},
+                   {'fid_key': 'Maturity', 'local_key': 'maturity_date'},
+                   {'fid_key': 'Account', 'local_key': 'account'},
+                   {'fid_key': 'Most Recent Price', 'local_key': 'most_recent_price'},
+                   {'fid_key': "Moody's Rating", 'local_key': 'moodys_rating'},
+                   {'fid_key': 'Product Type', 'local_key': 'product_type'},
+                   {'fid_key': 'S&P Rating', 'local_key': 's&p_rating'},
+                   {'fid_key': 'Most Recent Value', 'local_key': 'most_recent_value'},
+                   {'fid_key': 'QTY', 'local_key': 'quantity'},
+                   {'fid_key': 'Call Date', 'local_key': 'next_call_date'},
+                   {'fid_key': 'Estimated Yield', 'local_key': 'est_yield'},
                    ]
         ###############################################
         # Read in a Fidelity Bond list
@@ -409,6 +326,8 @@ class ImportFidelityBondList:
 
         reader = csv.DictReader(file_handle)
 
+        # validate the fields in the file
+
         for bond in reader:
             # There is a lot of fluff at the end of the file. Stop when
             # a record doesn't have a valid cusip.
@@ -417,51 +336,51 @@ class ImportFidelityBondList:
                 rec = {}
                 rec_is_valid = True  # assume success
                 for key_set in key_map:
-                    if key_set['import'] in bond:
-                        rec[key_set['rec']] = bond[key_set['import']]
+                    if key_set['fid_key'] in bond:
+                        rec[key_set['local_key']] = bond[key_set['fid_key']]
 
                         ########################################
                         # The quantity value needs some tweaks
                         ########################################
-                        if key_set['rec'] == 'quantity':
+                        if key_set['local_key'] == 'quantity':
                             # strip comma, convert to int, divide by 1000
-                            rec[key_set['rec']] = \
-                                int(rec[key_set['rec']].replace(',', '')) / 1000
+                            rec[key_set['local_key']] = \
+                                int(rec[key_set['local_key']].replace(',', '')) / 1000
                         ########################################
                         # The most recent value value needs a tweak
                         #######################################
-                        if key_set['rec'] == 'most_recent_value':
+                        if key_set['local_key'] == 'most_recent_value':
                             # strip the $ and comma
-                            rec[key_set['rec']] = \
-                                rec[key_set['rec']].replace('$', '')
-                            rec[key_set['rec']] = \
-                                float(rec[key_set['rec']].replace(',', ''))
+                            rec[key_set['local_key']] = \
+                                rec[key_set['local_key']].replace('$', '')
+                            rec[key_set['local_key']] = \
+                                float(rec[key_set['local_key']].replace(',', ''))
                         ########################################
                         # Dates need to be put in the proper format
                         ########################################
-                        if key_set['rec'] == 'maturity_date' or \
-                                key_set['rec'] == 'next_call_date ':
+                        if key_set['local_key'] == 'maturity_date' or \
+                                key_set['local_key'] == 'next_call_date ':
                             # convert month/day/year to a date object
                             d = datetime.strptime(
-                                    rec[key_set['rec']],
+                                    rec[key_set['local_key']],
                                     ImportFidelityBondList.FID_FORMAT)
 
                             # convert the date to the normalized format
-                            rec[key_set['rec']] = d.strftime(dfc.DATE_FORMAT)
+                            rec[key_set['local_key']] = d.strftime(dfc.DATE_FORMAT)
 
                         ########################################
                         # The import record contains account_id,
                         # while the bond record contains account
                         ########################################
-                        if key_set['rec'] == 'account':
-                            if rec[key_set['rec']] in \
+                        if key_set['local_key'] == 'account':
+                            if rec[key_set['local_key']] in \
                                     self.account_id_to_account_map:
                                 rec['account'] = self.account_id_to_account_map[
-                                    rec[key_set['rec']]]
+                                    rec[key_set['local_key']]]
                             else:
                                 msg = "Unable to find an account with the "
                                 msg += "following account ID :"
-                                msg += "{} ".format(rec[key_set['rec']])
+                                msg += "{} ".format(rec[key_set['local_key']])
                                 msg += "\nfor cusip: "
                                 msg += "{}. ".format(rec['cusip'])
                                 msg += "\nVerify the account ID in cash "
@@ -472,7 +391,7 @@ class ImportFidelityBondList:
                     else:
                         raise ValueError(
                                 "Expected key not found in imported rec: {}".format(
-                                        key_set['import']))
+                                        key_set['fid_key']))
                 if rec_is_valid:
                     self.records.append(rec)
             else:

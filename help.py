@@ -16,8 +16,7 @@ help_text = {
     "Overview":
 "Overview of the Cash Flow Application\n\n\
 This application is intended predict future cash flows based on \
-the current value of cash accounts and the ownership of funds, loans, CDs \
-and Bonds.\n\n\
+the current value of cash accounts, funds, loans, CDs and Bonds.\n\n\
 The cash flow results are viewable in either\n\
  - Text Format or\n\
  - Graph Format\n\n\
@@ -25,30 +24,47 @@ Cash flows are presented from the current date forward for a provisionable \
 number of months (see Settings/Tracking Months), to the end date. \
 Past cash flows are not tracked, only forward cash flows.\n\n\
 Note: If the opening date of a cash account is prior to the current date, \
-cash flow will be presented, in text mode, from the account opening date through the end date. However, graph mode is restricted to begin at the current date.\
+cash flow will be presented, in text mode, from the account opening date through \
+the end date. However, graph mode is restricted to begin at the current date.\
 \n\n\
 Note: Past bond, loan and CD information is held for historical purposes and can be viewed from the Edit Menu",
     "Usage":
 "Using The Cash Flow Application\n\n"
-"The first step in using this application is to create a data file to store\n\
-you data. A data file is created using the File/New Data File selection.\n\n\
+"Create a Data File\n\n\
+The first step in using this application is to create a data file to store\n\
+you data. A data file is created using the File/New Data File selection.\n\
+Subseqently, you will open this data file using the File/Open Data File \n\
+selection each time you want to use the application.\n\n\
+Create an Account\n\n\
 Next you need to create at least one account. Accounts are created using the\n\
-Edit/Account menu. You can add a checking account,savings, brokerage, etc.",
+Edit/Accounts menu. You can add a checking account, savings, brokerage, etc.\n\
+When you create an account, a corresponding cash account is created. The cash \n\
+account holds the cash, the Account contains information about the account.\n\n\
+When you create an account you can specify an Update Method. This method is \n\
+used to process .csv files downloaded from the account to update the datafile.\n\
+When creating an account, if the Update Method is other than \"Manual\", you\n\
+will be asked if you want to specify a file to initialize the Account.\n\n\
+If the Update Method is Fidelity Export, you will provide a .csv file containing\n\
+portfolio positions on the start date. The account will be initialized based\n\
+the content of this file.\n\n\
+Subsequent Use\n\n\
+From there you can add bonds, loans, funds, etc to your account.",
     "File":
 "File Menu Help\n\n\
-Open Data File    Use this option to open an existing data file. The data\n\
-                  must have been previously created by this application.\n\n\
-                  Opening a second data file replaces all information\n\
-                  previously read in.\n\n\
-New Data File     Create a new data file. The data file is used to store all\n\
-                  user information and settings.\n\n\
-                  Creating a new data file replaces all information\n\
-                  previously read in.\n\n\
-Save              There is no save operation available to the user. All\n\
-                  required file save operations are performed automatically.\n\n\
-                  Note that some screens have an 'Update' button. Depressing\n\
-                  button is required to save the changes applied in that\n\
-                  screen.\n\n\
+Open Data File     Use this option to open an existing data file. The data\n\
+                   must have been previously created by this application.\n\n\
+                   Opening a second data file replaces all information\n\
+                   previously read in.\n\n\
+New Data File      Create a new data file. The data file is used to store all\n\
+                   user information and settings.\n\n\
+                   Creating a new data file replaces all information\n\
+                   previously read in.\n\n\
+Validate Data File Use this function to verify a data file is proper and\n\
+                   has a valid data format\n\n\
+Note: There is no explicit file save operation. All file save operations are \n\
+      performed automatically as required.\n\
+Note: Some screens have an 'Update' button. Depressing the button is required\n\
+      to save the changes applied in that screen.\n\
 Note: Data Files have an associated version. If an upgrade is required\n\
       it will be done automatically.",
     "Editing Settings":
@@ -56,7 +72,10 @@ Note: Data Files have an associated version. If an upgrade is required\n\
 Tracking Months:  The number of months cash flows will be tracked \n\
                   from the current date.\n\
                   A pull down is available with common choices but any\n\
-                  number of months could be entered.\n",
+                  number of months could be entered.\n\n\
+Default Account:  xxx\n\n\
+Entries Per Page: xxx\n\n\
+Graph Type:       xxx\n\n",
     "Editing Accounts":
 "Editing the Accounts List\n\n\
 In this window you add or edit account information. An account is something\n\
@@ -168,6 +187,10 @@ The following fields can be manually edited:\n\n\
 "Transfers",
     "Editing Funds":
 "Funds List",
+    "Imports":
+"Imports Help\n\n\
+Accounts:         text\n\
+Bonds:            text",
     "Accounts":
 "Account Pull Down Help",
     "TextGraph":

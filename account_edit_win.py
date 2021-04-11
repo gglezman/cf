@@ -326,7 +326,7 @@ class AccountEditWin:
 									 command=self.import_bonds)
 			import_butt.pack(side=tk.RIGHT)
 
-		"""if self.instrument_type == "accounts":
+		"""if self.instrument_type == "accounts":   todo - what is this for ??
 		
 			import_butt = ttk.Button(parent, text='Import Accounts',
 									 style='Medium.TButton',
@@ -699,7 +699,10 @@ class AccountEditWin:
 		deleted, the parent will be informed.
 		(The parent is responsible for deleting associated records.
 		For example, the associated cash account will be deleted. If the
-		account holds bonds, CDs, etc, those records will also be deleted).
+		account holds bonds, CDs, etc, those records will also be deleted.
+		Remember that the data source in this method is only for the
+		instrument being edited. (e.g. bond, CDs,...) This method does not
+		have direct access to other parts of the data file).
 
 		If the account list is being edited and a new account is being added,
 		the parent will be informed. (The parent is responsible for adding
@@ -715,12 +718,25 @@ class AccountEditWin:
 					messagebox.showerror("Data Error", msg)
 					return
 
+		# Prevent multiple new records with the same account name
+		account_name = []
+		for rec in self.data_source:
+			if rec['account'] not in account_name:
+				account_name.append(rec['account'])
+			else:
+				messagebox.showerror("Data Error",
+									 "Account Name \'{}\' is used more than once. ".\
+									 format(rec['account']) +\
+									 "Each account name must be unique!")
+				return
 		# Deal with special record changes:
 		#  . new record in the account list - inform the parent
 		#  . modified account_name in the account list - inform parent
 		#  . deleted record - exclude it from the data source
 		#                   - if its a record from the account list
 		#                     (ie an account is being deleted) inform the parent
+
+		new_accounts = []
 		for rec in reversed(self.data_source):
 			if 'deleteKey' in rec and not 'newRec' in rec:
 				if self.instrument_type == 'account':
@@ -730,6 +746,7 @@ class AccountEditWin:
 			elif 'newRecKey' in rec and self.instrument_type == 'account' and not 'deleteKey'in rec:
 				self.clean_data_rec(rec)
 				self.parent.account_create(rec)
+				new_accounts.append({'account':rec['account'], 'account_id':rec['account_id']})
 			elif 'accNameChangedKey' in rec:
 				self.parent.account_name_changed(rec['accNameChangedKey'], # old name
 				                                rec['account'] )           # new name
@@ -745,7 +762,7 @@ class AccountEditWin:
 		self.parent.restart()
 
 		# inform the calling class we have closed the window
-		self.menu_bar.edit_window_closed(self.instrument_type)
+		self.menu_bar.edit_window_closed(self.instrument_type, new_accounts)
 
 		self.win.destroy()
 
@@ -771,8 +788,10 @@ class AccountEditWin:
 		"""The New Instrument window has closed.
 
 		Assign a rec_id to it and redisplay the account.
-		Also add a key to identify this as a new record. If its a new
-		account, we'll inform the parent so the cash_account gets created"""
+		Also add a key to identify this as a new record. (New records
+		that ultimately get accepted may get special treatment. For
+		example, a new account will genertate a new cash account)
+		"""
 
 		# remove the new instrument window from the list of open window
 		self.new_instrument_windows.remove(new_instrument_obj)
@@ -981,7 +1000,8 @@ class AccountEditWin:
 				# keep track of all open NewInstrument windows
 				self.new_instrument_windows.append(
 						NewInstrument(self, self.win, self.title,
-									  self.column_descriptor, rec))
+									  self.column_descriptor, rec, "bond"
+									  ))
 
 		self.display_accounts()
 

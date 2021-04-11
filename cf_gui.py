@@ -156,13 +156,15 @@ from help import Help
 import data_file_constants as dfc
 from settings_win import SettingsWin
 from account_edit_win import AccountEditWin
-from import_support import ImportAccountsWin
-from import_support import ImportBondDetailsWin
+from import_win import ImportAccountsWin
+from import_win import ImportBondDetailsWin
 from import_support import ImportMethodsSupported
 import gui as gui
 import file_manager as fm
 import cf_styles
 import utils as local_util
+# todo - the following line should go away
+from import_support import process_fidelity_account_download
 
 
 class GraphFrame:
@@ -408,7 +410,7 @@ class MyMenuBar:
         ########################################################
         self.help_menu = tk.Menu(my_menu)
         my_menu.add_cascade(label="Help", menu=self.help_menu)
-        self.help_menu.add_command(label="Overview!",
+        self.help_menu.add_command(label="Overview",
                                    command=partial(
                                            Help,
                                            "Overview",
@@ -418,7 +420,7 @@ class MyMenuBar:
                                            Help,
                                            "Usage",
                                            self.master))
-        self.help_menu.add_command(label="File Menu!",
+        self.help_menu.add_command(label="File Menu",
                                    command=partial(
                                            Help,
                                            "File",
@@ -464,6 +466,11 @@ class MyMenuBar:
                                    command=partial(
                                            Help,
                                            "Editing Scheduled Transfers",
+                                           self.master))
+        self.help_menu.add_command(label="Imports!",
+                                   command=partial(
+                                           Help,
+                                           "Imports",
                                            self.master))
         self.help_menu.add_command(label="Account Pull Down!",
                                    command=partial(
@@ -746,9 +753,36 @@ class MyMenuBar:
             self.edit_window_open['settings'] = 1
             SettingsWin(self.parent, self.master, self)
 
-    def edit_window_closed(self, instrument_type):
+    def edit_window_closed(self, instrument_type, new_accounts=[]):
+        # Mark the window closed
         if instrument_type in self.edit_window_open:
             self.edit_window_open[instrument_type] = 0
+
+        # Todo - this are needs work. gjg  It needs to be moved into import_support
+        # this is the trigger point for account init
+
+        fm = self.parent.get_file_manager()
+
+        for account in new_accounts:
+            update_method = self.parent.get_account_update_method(account['account_id'])
+            if update_method != "Manual":
+                response = tk.messagebox.askquestion(
+                    "New Account Initialization",
+                    "You have just created a new account "+
+                    "named \'{}\', ".format(account['account'])+
+                    "account ID: \'{}\'. ".format(account['account_id'])+
+                    "Would you like to initialize it? "+
+                    "(You will need a file to import "+
+                    "based on the Import Method you specified.)")
+                if response == "yes":
+                    if update_method == "Fidelity Export":
+                        file_content = fm.open_account_import(process_fidelity_account_download,
+                                                              account['account_id'])
+                        for rec in file_content:
+                            print(rec)
+                else:
+                    print("He answered No")
+
 
     @staticmethod
     def account_filter(accnt, rec):
@@ -944,11 +978,16 @@ class MyMenuBar:
 
     def validate_account_entry(self, rec, column_desc):
         """Validate the content of a account record. """
-
-        # TODO account name can not already exist
-
         header = rec["account"] + ": "
-        if rec["account"] == "":
+        if 'newRecKey' in rec and self.parent.get_account_rec(rec['account']) != None:
+            return "\"{}\" \'{}\' already exists. ".format(
+                    self.get_column_heading("account", column_desc),
+                    rec['account']) + \
+                   "Change the name on account with {} \'{}\' or Cancel".\
+                       format(self.get_column_heading("account_id", column_desc),
+                              rec['account_id'])
+
+        elif rec["account"] == "":
             return "\"{}\" may not be left blank.".format(
                     self.get_column_heading("account", column_desc))
 
@@ -1070,7 +1109,7 @@ class MyMenuBar:
             ImportBondDetailsWin(self,accounts)
 
     def ImportBondDetailsWin_return(self):
-        """This funtion is required by the ImportBondDetailsWin class.
+        """This function is required by the ImportBondDetailsWin class.
 
         It is called when the ImportBondsDetailsWin window is closed
         """
@@ -1235,6 +1274,9 @@ class CfGui:
     def get_accounts(self):
         return self.ds.get_accounts()
 
+    def get_account_rec(self, account):
+        return self.ds.get_account_rec(account)
+
     def get_cash_accounts(self):
         return self.ds.get_cash_accounts()
 
@@ -1333,5 +1375,8 @@ class CfGui:
     def get_accounts_with_bond_import_methods(self):
         return self.ds.get_accounts_with_bond_import_methods()
 
-    def update_account(self,account_id, account_details):
+    def get_account_update_method(self, acc_id):
+        return self.ds.get_account_update_method(acc_id)
+
+    def update_account(self,account_id, account_details): # todo - maybe this goes away
         self.ds.update_account(account_id, account_details)

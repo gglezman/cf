@@ -612,7 +612,7 @@ class CfAnalysis:
 
         self.logger.info("Entries in Bonds list: {0}".format(len(self.bonds)))
         for entry in self.bonds:
-
+            #print(entry)
             details = self.bond_cash_flow(entry)
 
             # If the Bond purchase date is on or after the opening date,
@@ -875,12 +875,6 @@ class CfAnalysis:
     def get_cash_accounts(self):
         return self.cash_accounts
 
-        # TODO - can we allow a ca to be deleted? We store the account infor in
-		#     the cash. Maybe its just cleaner to store account info in a new
-		#     section in the datafile for accounts? Should the account ID be stored
-		#     in the account record and not the CA record?  Does every account have
-		#     to have a cash account.from
-
     def get_sorted_accounts_list(self):
         """Return a sorted list of accounts.
 
@@ -900,6 +894,12 @@ class CfAnalysis:
 
     def get_accounts_with_bond_import_methods(self):
         return []
+
+    def get_account_update_method(self, acc_id):
+        for account in self.accounts:
+            if account['account_id'] == acc_id:
+                return account['update_method']
+        return None
 
     def get_accounts_with_import_methods(self):
         """Return accounts that have an import method specified
@@ -923,7 +923,7 @@ class CfAnalysis:
         """
         id_map = {}
         for account in self.accounts:
-            id_map[account['account_id']] = account['account_name']
+            id_map[account['account_id']] = account['account']
         return id_map
 
     def get_account_rec(self, account):
@@ -1005,7 +1005,7 @@ class CfAnalysis:
 
     def update_account(self, account_id, account_details):
         """ todo - when is this called and why is it called - looks like its called from import_account
-
+        This is called when a user hits the import button and import func has returned a list if records
         :param account_id: account to update # todo - is this a text string ? account id?
         :param account_details: This is a list of dictionary entries, with each
                 entry containing fields based on the investment type:
@@ -1023,6 +1023,8 @@ class CfAnalysis:
                 [symbol, date, description, quantity, value}
         :return:
         """
+        """
+        This is being done in import_support now.
         for rec in account_details:
             if rec['investment_type'] == 'ca':
                 for ca in self.cash_accounts:
@@ -1040,6 +1042,7 @@ class CfAnalysis:
                 print("{}: {}: {} / {}".format(
                     rec['investment_type'], rec['description'],
                     rec['quantity'],rec['value']))
+        """
 
     def log(self, lvl, debug_msg):
         if lvl == logging.CRITICAL:

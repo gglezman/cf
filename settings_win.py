@@ -48,7 +48,7 @@ class SettingsWin:
         # Tracking Months
         ###################
         tracking_months = ['1', '3', '6', '9', '12', '18', '24', '30', '36',
-                           '48', '60', '72', '120']
+                           '48', '60', '72', '120','240', '360']
 
         ttk.Label(frame, text="Tracking Months:",
                   style='MediumLeft.TLabel'). \

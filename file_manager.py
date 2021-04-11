@@ -232,8 +232,8 @@ class FileManager:
             with open(filename, 'r', newline='') as file_obj:
                 read_callback(file_obj)
 
-    def open_account_import(self, read_callback, rec):
-        """Open a csv file to read in bond information"""
+    def open_account_import(self, read_callback, account_id):
+        """Open a csv file to read in Account information"""
 
         filename = askopenfilename(
                 filetypes=(("Text File", "*.csv"), ("All Files", "*.*")),
@@ -243,4 +243,6 @@ class FileManager:
                             "FileManager::{}():".format(util.f_name()))
             with open(filename, 'r', newline='') as file_obj:
                 # The callback will return an array of imported data
-                return read_callback(file_obj, rec)
+                #print("Account_ID is {}".format(account_id))
+                ret
+                urn read_callback(file_obj, account_id)
