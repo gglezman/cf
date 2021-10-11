@@ -1804,6 +1804,7 @@ def create_widget_row(frame, rec, column_descriptor, tracking_end_date):
 
 	widget_list = []
 	for col, column in enumerate(column_descriptor):
+		print(column)
 		w = column["width"]
 		if column["type"] == 'text':
 			widget_list.append(ttk.Label(frame,

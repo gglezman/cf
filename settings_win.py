@@ -60,6 +60,7 @@ class SettingsWin:
                                                   textvariable=self.tm_var,
                                                   style='Common.TCombobox')
         self.tracking_months_combo.grid(row=row, column=col)
+        # todo - since I already have the old_settings, why go back to parent again?
         self.tracking_months_combo.set(
                 int(self.parent.get_settings('tracking_months')))
         self.tracking_months_combo['values'] = tracking_months
@@ -84,10 +85,10 @@ class SettingsWin:
                                           textvariable=self.default_account_var,
                                           style='Common.TCombobox')
 
-        self.account_combo['values'] = self.parent.get_sorted_accounts_list\
-            ()
+        self.account_combo['values'] = self.parent.get_sorted_accounts_list()
 
         self.account_combo.grid(row=row, column=col)
+        # todo - why go back to parent?
         if self.parent.get_settings('default_account') == "":
             if len(self.account_combo['values']) > 0:
                 self.account_combo.set(self.account_combo['values'][0])
@@ -103,7 +104,7 @@ class SettingsWin:
         col = 0
 
         bonds_per_page = ['15', '20', '25', '30', '35', '40', '45']
-        ttk.Label(frame, text="Bonds Per Page:",
+        ttk.Label(frame, text="Rows Per Page:",
                   style='MediumLeft.TLabel'). \
             grid(row=row, column=col, sticky='W')
         col += 1
@@ -164,8 +165,7 @@ class SettingsWin:
             tracking_months_changed = False
 
         # Default Account
-        if self.old_settings['default_account'] != \
-                self.account_combo.get():
+        if self.old_settings['default_account'] != self.account_combo.get():
             self.parent.set_setting('default_account',
                                     self.account_combo.get())
             default_account_changed = True

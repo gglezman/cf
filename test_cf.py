@@ -97,7 +97,7 @@ class TestCF(unittest.TestCase):
         pass
 
     def test_get_periodic_dates(self): 
-        cf = CfAnalysis()
+        cf = CfAnalysis(None, None)
 
         self.assertRaises(ValueError, cf.get_periodic_dates, self.START_DATE, 
                           "garbage", self.END_DATE)
@@ -453,7 +453,7 @@ class TestCF(unittest.TestCase):
 
     def test_bond_purchase_1(self): 
 
-        cf = CfAnalysis()
+        cf = CfAnalysis(None, None)
 
         # Scenario testing
         # - set up an account with some cash and buy some bonds

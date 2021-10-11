@@ -352,15 +352,19 @@ class MyMenuBar:
         ########################################################
         self.file_menu = tk.Menu(my_menu)
         my_menu.add_cascade(label="File", menu=self.file_menu)
-        self.file_menu.add_command(label="Open Data File",
-                                   command=self.open_data_file)
-        self.file_menu.add_command(label="New Data File",
-                                   command=self.new_data_file)
+        self.file_menu.add_command(label="Open Database File",
+                                   command=self.open_database_file)
+        self.file_menu.add_command(label="New Database File",
+                                   command=self.new_database_file)
         self.file_menu.add_separator()
-        self.file_menu.add_command(label="Validate Data File!",
-                                   command=self.validate_data_file)
+        self.file_menu.add_command(label="Validate Database File!",
+                                   command=self.validate_database_file)
+        self.file_menu.add_command(label="Dump Current Database",
+                                   command=self.dump_db)
         self.file_menu.add_separator()
 
+        # todo - create an exit function which will close the DB then quit
+        #      - if I x out the main gui, call the new exit function
         self.file_menu.add_command(label="Exit", command=quit)
 
         ########################################################
@@ -493,12 +497,24 @@ class MyMenuBar:
                                            "About",
                                            self.master))
 
-    def open_data_file(self):
-        filename = self.parent.fm.open_data_file()
+    def open_database_file(self):
+        self.parent.init_storage()
+        filename = self.parent.fm.open_database_file()
         if filename:
             self.parent.restart()
             self.parent.mode_change("Graph")
             self.parent.set_datafile(filename)
+            self.enable_full_menu_bar()
+
+    def new_database_file(self):
+        # FileManager will create the new data file and write it to disk
+        self.parent.init_storage()
+        filename = self.parent.fm.new_data_file()
+        if filename:
+            self.parent.restart()
+            self.parent.mode_change("Graph")
+            self.parent.set_datafile(filename)
+            # enable the 'Edit' entry on the menu bar
             self.enable_full_menu_bar()
 
     def enable_full_menu_bar(self):
@@ -506,23 +522,13 @@ class MyMenuBar:
         self.my_menu.entryconfig("Import", state='normal')
         self.my_menu.entryconfig("Reports", state='normal')
 
-    def new_data_file(self):
-        # FileManager will create the new data file and write it to disk
-        self.parent.init_storage()
-        filename = self.parent.fm.new_data_file()
-        if filename:
-            # read in the fresh file and restart
-            self.parent.fm.read_data_file(filename)
-            self.parent.restart()
-            self.parent.mode_change("Graph")
-            self.parent.set_datafile(filename)
-            # enable the 'Edit' entry on the menu bar
-            self.enable_full_menu_bar()
-
     @staticmethod
-    def validate_data_file():
+    def validate_database_file():
         messagebox.showerror("Data Validation",
                              "This feature is not yet in place")
+
+    def dump_db(self):
+        filename = self.parent.fm.dump_db()
 
     @staticmethod
     def report_interest():
@@ -532,7 +538,7 @@ class MyMenuBar:
     def edit_accounts(self):
         if self.edit_window_open['account'] == 0:
             columns = [
-                {"heading": "Account Name", "key": "account", "width": dfc.FW_MED,
+                {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
                  "type": "entry", "content": "text"},
                 {"heading": "Account ID", "key": "account_id", "width": dfc.FW_MEDSMALL,
                  "type": "entry", "content": "text"},
@@ -547,7 +553,7 @@ class MyMenuBar:
             self.edit_window_open['account'] = 1
             AccountEditWin(self.parent, 'Accounts', columns,
                            self.parent.get_accounts(), 'account',
-                           'account', 'account_id',
+                           'account_name', 'account_id',
                            validate_func=self.validate_account_entry)
 
     def edit_cash_accounts(self):
@@ -556,7 +562,7 @@ class MyMenuBar:
             accnt_set = self.parent.get_sorted_accounts_list()
 
             columns = [
-                {"heading": "Account Name", "key": "account", "width": dfc.FW_MED,
+                {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
                  "type": "text", "content": "ThinLeft.TLabel"},
                 {"heading": "Balance", "key": "balance", "width": dfc.FW_SMALL,
                  "type": "entry", "content": "dollars"},
@@ -571,7 +577,7 @@ class MyMenuBar:
             self.edit_window_open['ca'] = 1
             AccountEditWin(self.parent, 'Cash Accounts', columns,
                            self.parent.get_cash_accounts(), 'ca',
-                           'account', 'balance',
+                           'account_name', 'balance',
                            validate_func=self.validate_ca_entry)
 
     def edit_cds(self):
@@ -580,7 +586,7 @@ class MyMenuBar:
             accnt_set = self.parent.get_sorted_accounts_list()
 
             columns = [
-                {"heading": "Account Name", "key": "account", "width": dfc.FW_MED,
+                {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set},
                 {"heading": "Purchase\n Date", "key": "purchase_date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
@@ -599,7 +605,7 @@ class MyMenuBar:
 
             self.edit_window_open['cd'] = 1
             AccountEditWin(self.parent, 'Certificates of Deposit', columns,
-                           self.parent.get_cds(), 'cd', 'account', 'maturity_date',
+                           self.parent.get_cds(), 'cd', 'account_name', 'maturity_date',
                            validate_func=self.validate_cd_entry)
 
     def edit_loans(self):
@@ -608,7 +614,7 @@ class MyMenuBar:
             accnt_set = self.parent.get_sorted_accounts_list()
 
             columns = [
-                {"heading": "Account Name", "key": "account", "width": dfc.FW_MED,
+                {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set},
                 {"heading": "Origination\n Date", "key": "orig_date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
@@ -624,7 +630,7 @@ class MyMenuBar:
                  "type": "entry", "content": "text"}]
             self.edit_window_open['loan'] = 1
             AccountEditWin(self.parent, 'Loans', columns, self.parent.get_loans(),
-                           'loan', 'account', 'payoff_date',
+                           'loan', 'account_name', 'payoff_date',
                            validate_func=self.validate_loan_entry)
 
     def edit_bonds(self):
@@ -635,7 +641,7 @@ class MyMenuBar:
             expanded_accnt_set.extend(accnt_set)  # All + account set
 
             columns = [
-                {"heading": "Account Name", "key": "account", "width": dfc.FW_MED,
+                {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set},
                 {"heading": "Settlement\nDate", "key": "purchase_date",
                  "width": dfc.FW_SMALL, "type": "date", "content": "standard"},
@@ -666,7 +672,7 @@ class MyMenuBar:
 
             self.edit_window_open['bond'] = 1
             AccountEditWin(self.parent, 'Bonds', columns, self.parent.get_bonds(),
-                           'bond', 'account', 'maturity_date', filters=filters,
+                           'bond', 'account_name', 'maturity_date', filters=filters,
                            validate_func=self.validate_bond_entry)
 
     def edit_funds(self):
@@ -677,7 +683,7 @@ class MyMenuBar:
             expanded_accnt_set.extend(accnt_set)  # All + account set
 
             columns = [
-                {"heading": "Account Name", "key": "account", "width": dfc.FW_MED,
+                {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set},
                 {"heading": "Fund Name", "key": "fund", "width": dfc.FW_MED,
                  "type": "entry", "content": "text"},
@@ -697,7 +703,7 @@ class MyMenuBar:
 
             self.edit_window_open['fund'] = 1
             AccountEditWin(self.parent, 'Funds', columns, self.parent.get_funds(),
-                           'fund', 'account', 'interest_date',
+                           'fund', 'account_name', 'interest_date',
                            filters=filters,
                            validate_func=self.validate_fund_entry)
 
@@ -709,9 +715,9 @@ class MyMenuBar:
             accnt_set2.append('expense')
 
             columns = [
-                {"heading": "From Account", "key": "fromAccount", "width": dfc.FW_MED,
+                {"heading": "From Account", "key": "fromAccount_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set1},
-                {"heading": "To Account", "key": "toAccount", "width": dfc.FW_MED,
+                {"heading": "To Account", "key": "toAccount_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set2},
                 {"heading": "Date", "key": "frequency", "width": dfc.FW_SMALL,
                  "type": "date", "content": "latest"},
@@ -744,7 +750,7 @@ class MyMenuBar:
             self.edit_window_open['transfer'] = 1
             AccountEditWin(self.parent, 'Scheduled Transfers', columns,
                            self.parent.get_transfers(), 'transfer',
-                           'fromAccount', 'toAccount',  # TODO - how to sort date
+                           'fromAccount_name', 'toAccount_name',  # TODO - how to sort date
                            filters=filters,
                            validate_func=self.validate_xfer_entry)
 
@@ -1180,18 +1186,20 @@ class CfGui:
     It will construct the window and add all the required components.
     The 'data_source' will provide account data."""
 
-    def __init__(self, data_source):
+    def __init__(self, data_source, file_manager, logger):
         """The init method creates the user frame and related objects.
         The run() function puts it up on the screen.
         The user can then open a data file which triggers creation of
         the text frame"""
 
         self.ds = data_source
+        self.logger = logger
         self.root = tk.Tk()
         self.root.title("Cash Flow Analysis")
         cf_styles.set_styles()
         self.settings_mgr = SettingsManager()
-        self.fm = fm.FileManager(self)
+        self.fm = file_manager
+        self.fm.set_gui(self)
         self.mb = MyMenuBar(self.root, self)
         self.bf = gui.ButtonFrame(self, self.root, self.ds,
                                   data_source.start_date,
@@ -1224,7 +1232,7 @@ class CfGui:
 
     def update_graph(self):
         accnt_data = self.ds.get_account_data(
-                self.bf.get_active_account(),
+                self.bf.get_active_account_id(),
                 self.bf.get_granularity(),
                 self.bf.start_date,
                 self.bf.end_date)
@@ -1234,9 +1242,10 @@ class CfGui:
 
     def update_text(self):
         # A new data file may have no accounts
-        active_account = self.bf.get_active_account()
-        if active_account != "":
-            accnt_data = self.ds.get_register(active_account)
+        active_account_id = self.bf.get_active_account_id()
+        print("Active Accont is : {}".format(active_account_id))
+        if active_account_id != "":
+            accnt_data = self.ds.get_register(active_account_id)
             self.tf.show_text(accnt_data)
 
     def get_granularity(self):
@@ -1368,6 +1377,9 @@ class CfGui:
 
     def get_account_id_map(self):
         return self.ds.get_account_id_map()
+
+    def get_account_id(self, account_name):
+        return self.ds.get_account_id(account_name)
 
     def get_accounts_with_import_methods(self):
         return self.ds.get_accounts_with_import_methods()

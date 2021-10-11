@@ -191,10 +191,11 @@ class ButtonFrame:
 
         return self.granularity
 
-    def get_active_account(self):
+    def get_active_account_id(self):
         """The active account is whatever is active in the combo box"""
 
-        return self.account.get()
+        account_name = self.account.get()
+        return self.parent.get_account_id(account_name)
 
     def account_selection(self, _):
         """User has selected an account from the combo box"""
