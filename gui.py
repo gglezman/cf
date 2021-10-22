@@ -221,13 +221,14 @@ class ButtonFrame:
         self.account['values'] = self.ds.get_sorted_accounts_list()
 
         # Note - for a new data file, the default_account will be set to ""
-        if self.parent.get_settings('default_account') == "":
+        default_account = self.parent.get_settings('default_account')
+        if default_account == "":
             if len(self.account['values']) > 0:
                 self.account.set(self.account['values'][0])
             else:
                 self.account.set("")
         else:
-            self.account.set(self.parent.get_settings('default_account'))
+            self.account.set(default_account)
 
         self.active_account = self.account.get()
 

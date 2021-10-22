@@ -337,9 +337,9 @@ class MyMenuBar:
         self.parent = parent  # Gui
         self.master = master  # Tk.root
         self.data_file_name = ""
-        self.edit_window_open = {             # use an instrement type to index this dictionary
+        self.edit_window_open = {  # use an instrument type to index this dictionary
             'account': 0, 'ca':0, 'cd': 0, 'loan': 0, 'bond': 0,
-            'fund': 0, 'transfer': 0, 'settings': 0}
+            'fund': 0, 'transfer': 0, 'setting': 0}
         self.import_account_win_open = False
         self.import_bond_details_win_open = False
 
@@ -508,6 +508,8 @@ class MyMenuBar:
 
     def new_database_file(self):
         # FileManager will create the new data file and write it to disk
+
+        # reset the ledger
         self.parent.init_storage()
         filename = self.parent.fm.new_data_file()
         if filename:
@@ -540,7 +542,7 @@ class MyMenuBar:
             columns = [
                 {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
                  "type": "entry", "content": "text"},
-                {"heading": "Account ID", "key": "account_id", "width": dfc.FW_MEDSMALL,
+                {"heading": "Account Number", "key": "account_number", "width": dfc.FW_MEDSMALL,
                  "type": "entry", "content": "text"},
                 {"heading": "Account Type", "key": "account_type", "width": dfc.FW_MEDSMALL,
                  "type": "combo", "content": dfc.account_types},
@@ -553,7 +555,7 @@ class MyMenuBar:
             self.edit_window_open['account'] = 1
             AccountEditWin(self.parent, 'Accounts', columns,
                            self.parent.get_accounts(), 'account',
-                           'account_name', 'account_id',
+                           'account_name', 'account_number',
                            validate_func=self.validate_account_entry)
 
     def edit_cash_accounts(self):
@@ -685,7 +687,7 @@ class MyMenuBar:
             columns = [
                 {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set},
-                {"heading": "Fund Name", "key": "fund", "width": dfc.FW_MED,
+                {"heading": "Fund Name", "key": "symbol", "width": dfc.FW_MED,
                  "type": "entry", "content": "text"},
                 {"heading": "Date", "key": "date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
@@ -693,10 +695,11 @@ class MyMenuBar:
                  "type": "entry", "content": "dollars"},
                 {"heading": "Return\nRate", "key": "est_roi", "width": dfc.FW_SMALLEST,
                  "type": "entry", "content": "rate"},
-                {"heading": "Interest\nDate", "key": "interest_date", "width": dfc.FW_SMALL,
-                 "type": "date", "content": "standard"},
-                {"heading": "Compound", "key": "frequency", "width": dfc.FW_SMALL,
-                 "type": "combo", "content": compound1}]
+                #{"heading": "Interest\nDate", "key": "interest_date", "width": dfc.FW_SMALL,
+                # "type": "date", "content": "standard"},
+                #{"heading": "Compound", "key": "frequency", "width": dfc.FW_SMALL,
+                # "type": "combo", "content": compound1}
+                ]
             filters = [
                 {'type': 'combo', 'width': dfc.FW_MEDSMALL, 'label': 'Account Name:',
                  'set': expanded_accnt_set, 'function': self.account_filter}]
@@ -715,9 +718,9 @@ class MyMenuBar:
             accnt_set2.append('expense')
 
             columns = [
-                {"heading": "From Account", "key": "fromAccount_name", "width": dfc.FW_MED,
+                {"heading": "From Account", "key": "from_account_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set1},
-                {"heading": "To Account", "key": "toAccount_name", "width": dfc.FW_MED,
+                {"heading": "To Account", "key": "to_account_name", "width": dfc.FW_MED,
                  "type": "combo", "content": accnt_set2},
                 {"heading": "Date", "key": "frequency", "width": dfc.FW_SMALL,
                  "type": "date", "content": "latest"},
@@ -743,20 +746,20 @@ class MyMenuBar:
             expanded_accnt_set2.extend(accnt_set2)  # All + account set
             filters.append({'type': 'combo',
                             'width': dfc.FW_MEDSMALL,
-                            'label': 'ToAccount:',
+                            'label': 'to_account:',
                             'set': expanded_accnt_set2,
                             'function': self.to_account_filter})
 
             self.edit_window_open['transfer'] = 1
             AccountEditWin(self.parent, 'Scheduled Transfers', columns,
                            self.parent.get_transfers(), 'transfer',
-                           'fromAccount_name', 'toAccount_name',  # TODO - how to sort date
+                           'from_account_name', 'to_account_name',  # TODO - how to sort date
                            filters=filters,
                            validate_func=self.validate_xfer_entry)
 
     def edit_settings(self):
-        if self.edit_window_open['settings'] == 0:
-            self.edit_window_open['settings'] = 1
+        if self.edit_window_open['setting'] == 0:
+            self.edit_window_open['setting'] = 1
             SettingsWin(self.parent, self.master, self)
 
     def edit_window_closed(self, instrument_type, new_accounts=[]):
@@ -803,7 +806,7 @@ class MyMenuBar:
     def to_account_filter(accnt, rec):
         """Filter a bond based on the given account criteria """
 
-        if accnt == 'All' or accnt == rec['toAccount']:
+        if accnt == 'All' or accnt == rec['to_account']:
             return True
         else:
             return False
@@ -812,7 +815,7 @@ class MyMenuBar:
     def from_account_filter(accnt, rec):
         """Filter a bond based on the given account criteria """
 
-        if accnt == 'All' or accnt == rec['fromAccount']:
+        if accnt == 'All' or accnt == rec['from_account']:
             return True
         else:
             return False
@@ -873,7 +876,7 @@ class MyMenuBar:
             return header + "\"{}\" may not be blank.".format(
                     self.get_column_heading("cusip", column_desc))
 
-        elif rec["account"] == "":
+        elif rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
                     self.get_column_heading("account", column_desc))
 
@@ -930,7 +933,7 @@ class MyMenuBar:
         """Validate the content of a fund record."""
         print(rec)
         header = ""
-        if rec["account"] == "":
+        if rec["account_name"] == "":
             return header + "\"{}\" must be a valid account name.".format(
                     self.get_column_heading("account", column_desc))
 
@@ -952,13 +955,13 @@ class MyMenuBar:
         """Validate the content of a transfer record. """
 
         header = ""
-        if rec["fromAccount"] == "":
+        if rec["from_account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("fromAccount", column_desc))
+                    self.get_column_heading("from_account", column_desc))
 
-        elif rec["toAccount"] == "":
+        elif rec["to_account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("toAccount", column_desc))
+                    self.get_column_heading("to_account", column_desc))
 
         elif rec["amount"] == 0.0:
             return header + "\"{}\" can not be zero.".format(
@@ -984,34 +987,38 @@ class MyMenuBar:
 
     def validate_account_entry(self, rec, column_desc):
         """Validate the content of a account record. """
-        header = rec["account"] + ": "
-        if 'newRecKey' in rec and self.parent.get_account_rec(rec['account']) != None:
+        if rec["account_name"] == "":
+            return "Account must have a non-blank Account Name"
+
+        header = rec["account_name"] + ": "
+        """
+        if 'newRecKey' in rec and self.parent.get_account_rec(rec['account_id']) != None:
             return "\"{}\" \'{}\' already exists. ".format(
                     self.get_column_heading("account", column_desc),
-                    rec['account']) + \
+                    rec['account_id']) + \
                    "Change the name on account with {} \'{}\' or Cancel".\
                        format(self.get_column_heading("account_id", column_desc),
                               rec['account_id'])
-
-        elif rec["account"] == "":
-            return "\"{}\" may not be left blank.".format(
-                    self.get_column_heading("account", column_desc))
+        """
+        if rec["account_number"] == "":
+            return header + "\"{}\" may not be left blank.".format(
+                    self.get_column_heading("account_number", column_desc))
 
         elif rec["account_type"] == "":
             return header + "\"{}\" must be a valid entry.".format(
                 self.get_column_heading("account_type", column_desc))
 
-        elif rec["update_method"] != "Manual" and rec["account_id"] == "":
+        elif rec["update_method"] != "Manual" and rec["account_number"] == "":
             return header + \
                    "\"{}\" field may not be left blank when {} is specified." \
-                       .format(self.get_column_heading("account_id", column_desc),
+                       .format(self.get_column_heading("account_number", column_desc),
                                self.get_column_heading("update_method", column_desc))
         return ""
 
     def validate_ca_entry(self, rec, column_desc):
         """Validate the content of a cash account record. """
         header = ""
-        if rec["account"] == "":
+        if rec["account_name"] == "":
             return header + "\"{}\" may not be left blank.".format(
                     self.get_column_heading("account", column_desc))
 
@@ -1032,7 +1039,7 @@ class MyMenuBar:
             return header + "\"{}\" may not be blank.".format(
                     self.get_column_heading("cusip", column_desc))
 
-        elif rec["account"] == "":
+        elif rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
                     self.get_column_heading("account", column_desc))
 
@@ -1045,6 +1052,7 @@ class MyMenuBar:
                     self.get_column_heading("quantity", column_desc))
 
         elif rec["quantity"] < 1:  # must be integer
+            # todo - this is a dup of the previous check
             return header + "\"{}\" must be a minimum of one.".format(
                     self.get_column_heading("quantity", column_desc))
 
@@ -1071,7 +1079,7 @@ class MyMenuBar:
 
         header = ""
 
-        if rec["account"] == "":
+        if rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
                     self.get_column_heading("account", column_desc))
 
@@ -1151,35 +1159,6 @@ class StatusBar:
         self.datafile = filename
         self.status.configure(text=StatusBar.LABEL + self.datafile)
 
-
-class SettingsManager:
-    def __init__(self):
-        self.settings = None
-
-        self.reset_settings()
-
-    def get_settings(self, setting=None):
-        if setting:
-            return self.settings[setting]
-        else:
-            return self.settings
-
-    def set_settings(self, settings):
-        """"Set the current collection of settings.
-
-        settings is a dict
-        """
-        self.settings = settings[0]
-
-    def set_setting(self, setting, value):
-        # print("setting: {} value: {}".format(setting,value))
-        self.settings[setting] = value
-        # print(self.settings)
-
-    def reset_settings(self):
-        self.settings = dfc.default_settings
-
-
 class CfGui:
     """This is the main class for the GUI.  
 
@@ -1197,7 +1176,7 @@ class CfGui:
         self.root = tk.Tk()
         self.root.title("Cash Flow Analysis")
         cf_styles.set_styles()
-        self.settings_mgr = SettingsManager()
+        #self.settings_mgr = SettingsManager()
         self.fm = file_manager
         self.fm.set_gui(self)
         self.mb = MyMenuBar(self.root, self)
@@ -1311,16 +1290,37 @@ class CfGui:
         return self.ds.get_sorted_accounts_list()
 
     def get_new_rec(self, instrument_type):
-        return self.ds.get_new_rec(instrument_type)
+        return self.fm.get_new_rec(instrument_type)
 
-    def set_settings(self, settings):
-        self.settings_mgr.set_settings(settings)
+    #def set_settings(self, settings):
+    #    self.settings_mgr.set_settings(settings)
 
     def set_setting(self, setting, value):
-        self.settings_mgr.set_setting(setting, value)
+        self.ds.set_setting(setting, value)
 
-    def get_settings(self, setting=None):
-        return self.settings_mgr.get_settings(setting)
+    def write_to_db(self, table, rec_id, modified_data):
+        self.ds.write_to_db(table, rec_id, modified_data)
+
+    def new_db_rec(self, table, rec):
+        self.ds.new_db_rec(table, rec)
+
+    def get_settings(self, column=None):
+        """Get the requested setting(s)
+
+        If a single setting is requested, return just that setting.
+        Otherwise, return a dictionary of settings.
+
+        """
+        setting = self.ds.get_from_db('setting', column)
+
+        # At start up, some data is needed before the DB is open.
+        if len(setting) == 0:
+            return ""
+        else:
+            if column == None:
+                return setting[0]             # return a dictionary
+            else:
+                return setting[0][column]     # return a scalar
 
     def init_ds_storage(self):
         self.ds.init_storage()
@@ -1364,7 +1364,6 @@ class CfGui:
 
     def init_storage(self):
         self.ds.init_storage()
-        self.settings_mgr.reset_settings()
 
     def log(self, lvl, debug_str):
         self.ds.log(lvl, debug_str, )
@@ -1379,7 +1378,7 @@ class CfGui:
         return self.ds.get_account_id_map()
 
     def get_account_id(self, account_name):
-        return self.ds.get_account_id(account_name)
+        return self.ds.get_account_rec_id(account_name)
 
     def get_accounts_with_import_methods(self):
         return self.ds.get_accounts_with_import_methods()
@@ -1388,7 +1387,7 @@ class CfGui:
         return self.ds.get_accounts_with_bond_import_methods()
 
     def get_account_update_method(self, acc_id):
-        return self.ds.get_account_update_method(acc_id)
+        return self.ds._update_method(acc_id)
 
     def update_account(self,account_id, account_details): # todo - maybe this goes away
         self.ds.update_account(account_id, account_details)

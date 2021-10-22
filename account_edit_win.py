@@ -53,15 +53,15 @@ class AccountEditWin:
 	exceptions:
 
 	Occurrences Exception: The widgets involved in storing/presenting portions
-	 of the occurrence (ie next_date and regularity) do not store the occurrence
+	of the occurrence (ie next_date and regularity) do not store the occurrence
 	itself.	Therefore occurrences must be maintained directly in the record.
 	(The next_date (in the occurrence sequence) and the regularity (eg monthly,
 	yerly) are extracted from the occurrence when needed for display).
 
-	ActionOnInstrument Exception: Some actions on instruments want to be
+	ActionOnInstrument Exception: Some actions on instruments are
 	performed on the information the user has entered and is currently stored
 	in the widget. For example, if the user changes the inflation factor in a
-	transfer, the "Transfer Schedule" action on the insturment should reflect
+	transfer, the "Transfer Schedule" action on the instrument should reflect
 	the latest inflation factor. For this reason, ActionOnInstrument always
 	pushed the widget content for a given row to the data_source. The actions
 	then us data_source for calculations.
@@ -193,11 +193,17 @@ class AccountEditWin:
 		self.parent = parent  # GUI
 		self.title = title
 		self.column_descriptor = column_descriptor
-		self.data_source_orig = data_source  # reference to official
 		self.tracking_end_date = parent.get_tracking_end_date()
-		self.data_source = []  # make a copy of the data
-		for item in data_source:
+
+		self.data_source_orig = data_source  # reference to official
+		self.data_source = []                # make a copy of the data
+		#############################################################
+		# Add an ID for ease of record tracking and perform the copy
+		#############################################################
+		for id_,item in enumerate(self.data_source_orig):
+			item['id'] = id_
 			self.data_source.append(item.copy())
+		self.next_id = len(self.data_source)
 
 		self.instrument_type = instrument_type
 		self.primary_sort_key = primary_sort_key
@@ -210,7 +216,7 @@ class AccountEditWin:
 		self.menu_bar = parent.get_menu_bar()
 
 		self.first_entry_to_display = 0  # paging support
-		self.entries_to_display = int(parent.get_settings('bonds_per_page'))
+		self.entries_to_display = int(parent.get_settings('entries_per_page'))
 		self.page_label = None
 		self.actions_menu = None  # Subordinate windows
 		self.bond_call_windows = []
@@ -221,9 +227,9 @@ class AccountEditWin:
 		###############################################
 		# Add an ID for ease of record tracking
 		###############################################
-		for id_, rec in enumerate(self.data_source):
-			rec['id'] = id_
-		self.next_id = len(self.data_source)
+		#for id_, rec in enumerate(self.data_source):
+		#	rec['id'] = id_
+		#self.next_id = len(self.data_source)
 
 		############################################################
 		# Construct all possible frames and widgets. The pieces
@@ -338,8 +344,8 @@ class AccountEditWin:
 		"""Create all the widgets necessary to present the account info.
 
 		The member 'account_widgets' is a list of lists. Each entry
-		in the list represents an item in the account list. That entry is also
-		a list of all the widgets necessary to present that account entry.
+		in the list represents an item in the account list. That entry is a
+		a list of all the widgets necessary to present the account entry.
 		"""
 
 		account_widgets = []
@@ -665,6 +671,7 @@ class AccountEditWin:
 		"""To simplify processing, some additional keys were added to
 		the records. They need to be removed before the records is written."""
 
+		# todo - do I need to clean the records ? this whole thing is temporary
 		for rec in self.data_source:
 			self.clean_data_rec(rec)
 
@@ -718,49 +725,86 @@ class AccountEditWin:
 					messagebox.showerror("Data Error", msg)
 					return
 
-		# Prevent multiple new records with the same account name
-		account_name = []
-		for rec in self.data_source:
-			if rec['account'] not in account_name:
-				account_name.append(rec['account'])
-			else:
-				messagebox.showerror("Data Error",
-									 "Account Name \'{}\' is used more than once. ".\
-									 format(rec['account']) +\
-									 "Each account name must be unique!")
-				return
-		# Deal with special record changes:
-		#  . new record in the account list - inform the parent
-		#  . modified account_name in the account list - inform parent
-		#  . deleted record - exclude it from the data source
-		#                   - if its a record from the account list
-		#                     (ie an account is being deleted) inform the parent
+		# Prevent duplicate account names. This is done here rather than in the
+		# the validate function because the validate function only sees 1 record
+		account_names = []
+		if self.instrument_type == 'account':
+			for rec in self.data_source:
+				if rec['account_name'] not in account_names:
+					account_names.append(rec['account_name'])
+				else:
+					messagebox.showerror(
+						"Data Error",
+						"Account Name \'{}\' is used more than once.".\
+						format(rec['account_name']) +\
+						"Each Account Name must be unique!")
+					return
 
-		new_accounts = []
-		for rec in reversed(self.data_source):
-			if 'deleteKey' in rec and not 'newRec' in rec:
-				if self.instrument_type == 'account':
+		# Deal with special record changes to the account list:
+		#  . new account record - inform the parent
+		#  . modified account_name in an account record - inform parent
+		#  . deleted an account record -inform the parent
+		# todo this could be cleaned up to check instrument type earlier. it will be much clearer
+		if self.instrument_type == 'account':
+			for rec in self.data_source:
+				if 'deleteKey' in rec and not 'newRec' in rec:
 					# inform the parent an account has been deleted
-					self.parent.account_delete(rec['account'])
-				self.data_source.remove(rec)
-			elif 'newRecKey' in rec and self.instrument_type == 'account' and not 'deleteKey'in rec:
-				self.clean_data_rec(rec)
-				self.parent.account_create(rec)
-				new_accounts.append({'account':rec['account'], 'account_id':rec['account_id']})
-			elif 'accNameChangedKey' in rec:
-				self.parent.account_name_changed(rec['accNameChangedKey'], # old name
-				                                rec['account'] )           # new name
-		self.clean_data_source()
+					self.parent.account_delete(rec['rec_id'])    # account_delete must accept rec_id
+					# todo - clean the record?
+					# todo - delete the rec from the db
+				elif 'newRecKey' in rec and not 'deleteKey'in rec:
+					self.clean_data_rec(rec)
+					# todo - previously a list of new accounts was kept and returned
+					#  to menu bar which asked about initializing the account
+					self.parent.account_create(rec)
+				elif 'accNameChangedKey' in rec:
+					# todo - can I get the old account name from the old_data_Source
+					self.parent.account_name_changed(rec['accNameChangedKey'], # old name
+				                                     rec['account_name'] )      # new name
+
+
+		# look for records which have changed. All new records are at the end
+		modified_data = []
+		for rec_num,rec in enumerate(self.data_source_orig):
+			modified_data.clear()
+			for key in rec.keys():
+				if self.data_source[rec_num][key] != rec[key]:
+					modified_data.append( (key, self.data_source[rec_num][key]) )
+			if modified_data:
+				print("table: {}, rec_id {}, modified_data {}".format(
+				    self.instrument_type,
+				    self.data_source[rec_num]['rec_id'],
+				    modified_data))
+				self.parent.write_to_db(self.instrument_type,
+										self.data_source[rec_num]['rec_id'],
+										modified_data)
+		# look for new records
+		print(len(self.data_source))
+		print(len(self.data_source_orig))
+		if len(self.data_source) > len(self.data_source_orig):
+			print("We have new records")
+			for i in range(len(self.data_source_orig),len(self.data_source)):
+				print("i= " + str(i))
+				print(self.data_source[i])
+				self.clean_data_rec(self.data_source[i])
+				self.parent.new_db_rec(self.instrument_type,self.data_source[i])
+
+
+
 
 		# replace the official data source with the modified
-		self.data_source_orig.clear()
-		for entry in self.data_source:
-			self.data_source_orig.append(entry)
+		# todo - clean this up
+		#self.clean_data_source()
+		#self.data_source_orig.clear()
+		#for entry in self.data_source:
+		#	self.data_source_orig.append(entry)
 
-		self.parent.fm.write_data_file()
+		#self.parent.fm.write_data_file()
 		# Updated account data - restart everything
+		# todo - restart takes seconds !!!!
 		self.parent.restart()
 
+		new_accounts = []   #see todo above
 		# inform the calling class we have closed the window
 		self.menu_bar.edit_window_closed(self.instrument_type, new_accounts)
 
@@ -1801,10 +1845,8 @@ def add_heading_widgets(parent, column_descriptor):
 
 def create_widget_row(frame, rec, column_descriptor, tracking_end_date):
 	"""Create a row of widgets for the given rec."""
-
 	widget_list = []
 	for col, column in enumerate(column_descriptor):
-		print(column)
 		w = column["width"]
 		if column["type"] == 'text':
 			widget_list.append(ttk.Label(frame,
@@ -1885,7 +1927,7 @@ def update_rec_from_widgets(rec, column_descriptor, widget_row, instrument_type)
 	for col, column in enumerate(column_descriptor):
 		if column["type"] == "entry":
 			# watch for account_name changes
-			if instrument_type == 'account' and column['key'] == 'account':
+			if instrument_type == 'account' and column['key'] == 'account_name':
 				# Don't apply the nameChanged key to a new record - one which starts with "" name
 				if rec[column['key']] != widget_row[col].get() and rec[column['key']] != "":
 					rec['accNameChangedKey'] = rec[column['key']]   # save the old name for now

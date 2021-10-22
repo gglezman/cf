@@ -19,6 +19,7 @@ import platform
 # Some useful constants
 #################################
 # The following software version should be updated with every release
+# todo - the SW version is now kept in the DB
 
 SW_VERSION = "1.22"
 
@@ -48,7 +49,7 @@ SMALL_BORDER_WIDTH = 2
 BORDER_WIDTH = 4
 
 account_types = ['Checking', 'Brokerage', 'Savings', 'Money Market']
-instrument_types = ['ca', 'bond', 'cd', 'loan', 'transfer' ]
+instrument_types = ['ca', 'bond', 'cd', 'loan', 'transfer','setting' ]
 
 # the following should be used in conjunction with
 #     datetime.strftime(xxx_FORMAT)
@@ -67,12 +68,12 @@ SHORT_DATE_FORMAT = '%m/%d'
 # As of  1.22
 #################################
 acc_1_22_fieldnames = ['account', 'account_id', 'opening_date', 'account_type','update_method','note']
-acc_new_rec = {'account': "", 'account_id': "", 'opening_date': "", 'account_type':"",
-              'update_method':"Manual", 'note': ""}
+#acc_new_rec = {'account': "", 'account_id': "", 'opening_date': "", 'account_type':"",
+#              'update_method':"Manual", 'note': ""}
 
 ca_1_22_fieldnames = ['account', 'balance', 'rate', 'interest_date', 'frequency', 'note']
-ca_new_rec = {'account': "", 'balance': 0.0, 'rate': 0.0,
-              'interest_date': "", 'frequency': "monthly", 'note': ""}
+#ca_new_rec = {'account': "", 'balance': 0.0, 'rate': 0.0,
+#              'interest_date': "", 'frequency': "monthly", 'note': ""}
 
 bond_1_22_fieldnames = ['account', 'bond_price', 'quantity',
                         'coupon', 'fee', 'purchase_date', 'maturity_date',
@@ -80,42 +81,43 @@ bond_1_22_fieldnames = ['account', 'bond_price', 'quantity',
                         'most_recent_price', 'moodys_rating', 'product_type',
                         's&p_rating', 'most_recent_value', 'next_call_date',
                         'est_yield']
-bond_new_rec = {'account': "", 'bond_price': 0.0, 'quantity': 0,
-                'coupon': 0.0, 'fee': 0.0, 'purchase_date': "", 'maturity_date': "",
-                'frequency': "", 'cusip': "", 'issuer': "",
-                'call_date': "None", 'call_price': 0.0,
-                'most_recent_price': 0.0, 'moodys_rating': "", 'product_type': "",
-                's&p_rating': "", 'most_recent_value': 0.0, 'next_call_date': "None",
-                'est_yield': 0.0}
+#bond_new_rec = {'account': "", 'bond_price': 0.0, 'quantity': 0,
+#                'coupon': 0.0, 'fee': 0.0, 'purchase_date': "", 'maturity_date': "",
+#                'frequency': "", 'cusip': "", 'issuer': "",
+#                'call_date': "None", 'call_price': 0.0,
+#                'most_recent_price': 0.0, 'moodys_rating': "", 'product_type': "",
+#                's&p_rating': "", 'most_recent_value': 0.0, 'next_call_date': "None",
+#                'est_yield': 0.0}
 
 fund_1_22_fieldnames = ['account', 'fund', 'date', 'balance', 'est_roi',
                         'interest_date', 'frequency']
-fund_new_rec = {'account': "", 'fund': "", 'date': "", 'balance': 0.0,
-                'est_roi': 0.0, 'interest_date': "", 'frequency': ""}
+#fund_new_rec = {'account': "", 'fund': "", 'date': "", 'balance': 0.0,
+#                'est_roi': 0.0, 'interest_date': "", 'frequency': ""}
 
 xfer_1_22_fieldnames = ['fromAccount', 'toAccount',
                         'amount', 'frequency', 'inflation', 'note']
-xfer_new_rec = {'fromAccount': "", 'toAccount': "",
-                'amount': 0.0, 'frequency': "", 'inflation':0, 'note': ""}
+#xfer_new_rec = {'fromAccount': "", 'toAccount': "",
+#                'amount': 0.0, 'frequency': "", 'inflation':0, 'note': ""}
 
 loan_1_22_fieldnames = ['account', 'balance',
                         'rate', 'orig_date', 'payoff_date', 'frequency', 'note']
-loan_new_rec = {'account': "", 'balance': 0.0,
-                'rate': 0.0, 'orig_date': "", 'payoff_date': "",
-                'frequency': "", 'note': ""}
+#loan_new_rec = {'account': "", 'balance': 0.0,
+#                'rate': 0.0, 'orig_date': "", 'payoff_date': "",
+#                'frequency': "", 'note': ""}
 
 cd_1_22_fieldnames = ['account', 'purchase_price', 'quantity',
                       'rate', 'purchase_date', 'maturity_date', 'frequency',
                       'cusip']
-cd_new_rec = {'account': "", 'purchase_price': 0.0, 'quantity': 0,
-              'rate': 0.0, 'purchase_date': "", 'maturity_date': "", 'frequency': "",
-              'cusip': ""}
+#cd_new_rec = {'account': "", 'purchase_price': 0.0, 'quantity': 0,
+#              'rate': 0.0, 'purchase_date': "", 'maturity_date': "", 'frequency': "",
+#              'cusip': ""}
 
 settings_1_22_fieldnames = ['tracking_months', 'default_account',
                             'bonds_per_page', 'graph_type']
 
+#todo - the following is still used
 default_settings = {'tracking_months': 24, 'default_account': "",
-                    'bonds_per_page': 30, 'graph_type': "bar"}
+                    'entries_per_page': 30, 'graph_type': "bar"}
 
 #################################
 # Current field names
