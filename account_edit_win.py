@@ -717,6 +717,7 @@ class AccountEditWin:
 		"""
 		self.close_subordinate_windows()  # just in case...
 
+		# run the validation code
 		for r_num, rec in enumerate(self.data_source):
 			update_rec_from_widgets(rec, self.column_descriptor, self.account_widgets[r_num], self.instrument_type)
 			if self.validate_func:
@@ -745,11 +746,11 @@ class AccountEditWin:
 		#  . modified account_name in an account record - inform parent
 		#  . deleted an account record -inform the parent
 		# todo this could be cleaned up to check instrument type earlier. it will be much clearer
+		"""
 		if self.instrument_type == 'account':
 			for rec in self.data_source:
 				if 'deleteKey' in rec and not 'newRec' in rec:
 					# inform the parent an account has been deleted
-					self.parent.account_delete(rec['rec_id'])    # account_delete must accept rec_id
 					# todo - clean the record?
 					# todo - delete the rec from the db
 				elif 'newRecKey' in rec and not 'deleteKey'in rec:
@@ -762,32 +763,38 @@ class AccountEditWin:
 					self.parent.account_name_changed(rec['accNameChangedKey'], # old name
 				                                     rec['account_name'] )      # new name
 
-
+        """
 		# look for records which have changed. All new records are at the end
 		modified_data = []
 		for rec_num,rec in enumerate(self.data_source_orig):
-			modified_data.clear()
-			for key in rec.keys():
-				if self.data_source[rec_num][key] != rec[key]:
-					modified_data.append( (key, self.data_source[rec_num][key]) )
-			if modified_data:
-				print("table: {}, rec_id {}, modified_data {}".format(
-				    self.instrument_type,
-				    self.data_source[rec_num]['rec_id'],
-				    modified_data))
-				self.parent.write_to_db(self.instrument_type,
-										self.data_source[rec_num]['rec_id'],
-										modified_data)
+			if 'deleteKey' in self.data_source[rec_num]:
+				if self.instrument_type == 'account':
+					pass
+					# inform the parent to delete the all associated records
+					#self.parent.account_delete(rec['rec_id'])  # account_delete must accept rec_id
+				self.parent.delete_db_rec(self.instrument_type, rec['rec_id'])
+			else:
+				modified_data.clear()
+				for key in rec.keys():
+					if self.data_source[rec_num][key] != rec[key]:
+						modified_data.append( (key, self.data_source[rec_num][key]))
+				if modified_data:
+					self.parent.write_to_db(self.instrument_type,
+					    					self.data_source[rec_num]['rec_id'],
+						    				modified_data)
 		# look for new records
-		print(len(self.data_source))
-		print(len(self.data_source_orig))
+		#print(len(self.data_source))
+		#print(len(self.data_source_orig))
 		if len(self.data_source) > len(self.data_source_orig):
-			print("We have new records")
+			#print("We have new records")
 			for i in range(len(self.data_source_orig),len(self.data_source)):
-				print("i= " + str(i))
-				print(self.data_source[i])
-				self.clean_data_rec(self.data_source[i])
-				self.parent.new_db_rec(self.instrument_type,self.data_source[i])
+				# if its new and flagged for delete, ignore it
+				if 'deleteKey' not in self.data_source[i]:
+					self.clean_data_rec(self.data_source[i])
+					if self.instrument_type == 'account':
+						self.parent.account_create(self.data_source[i])
+					else:
+						self.parent.new_db_rec(self.instrument_type,self.data_source[i])
 
 
 

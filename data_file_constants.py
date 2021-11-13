@@ -56,6 +56,9 @@ instrument_types = ['ca', 'bond', 'cd', 'loan', 'transfer','setting' ]
 DATE_FORMAT = '%Y-%m-%d'
 SHORT_DATE_FORMAT = '%m/%d'
 
+INCOME_ACCOUNT_ID = 0
+EXPENSE_ACCOUNT_ID = 1
+
 ####################################################
 # Fieldnames for the data file
 ####################################################

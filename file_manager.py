@@ -51,95 +51,6 @@ class FileManager:
 
         return filename
 
-    def write_data_file(self):
-        """
-        # todo - do we even need a write_data_file any longer?
-        #        the individual commits should be sufficient
-        # Who calls this and can I map those calls to commits?
-
-        self.logger.log(logging.INFO,
-                    "{}: {}".format(util.f_name(),self.data_filename))
-
-        file_handle = open(self.data_filename, 'w', newline='')
-        file_handle.write(DATA_FILE_MAGIC_ID + "\n")
-        file_handle.write(dfc.SW_VERSION + "\n")
-        file_handle.write("Reserved 1" + "\n")
-        file_handle.write("Reserved 2" + "\n")
-
-        # Accounts
-        file_handle.write(str(len(self.parent.get_accounts())) + "\n")
-        writer = csv.DictWriter(file_handle,
-                                fieldnames=dfc.acc_fieldnames,
-                                quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for entry in self.parent.get_accounts():
-            writer.writerow(entry)
-
-        # cash accounts
-        file_handle.write(str(len(self.parent.get_cash_accounts())) + "\n")
-        writer = csv.DictWriter(file_handle,
-                                fieldnames=dfc.ca_fieldnames,
-                                quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for entry in self.parent.get_cash_accounts():
-            writer.writerow(entry)
-
-        # cds
-        file_handle.write(str(len(self.parent.get_cds())) + "\n")
-        writer = csv.DictWriter(file_handle,
-                                fieldnames=dfc.cd_fieldnames,
-                                quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for entry in self.parent.get_cds():
-            writer.writerow(entry)
-
-        # loans
-        file_handle.write(str(len(self.parent.get_loans())) + "\n")
-        writer = csv.DictWriter(file_handle,
-                                fieldnames=dfc.loan_fieldnames,
-                                quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for entry in self.parent.get_loans():
-            writer.writerow(entry)
-
-        # bonds
-        file_handle.write(str(len(self.parent.get_bonds())) + "\n")
-        writer = csv.DictWriter(file_handle,
-                                fieldnames=dfc.bond_fieldnames,
-                                quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for entry in self.parent.get_bonds():
-            writer.writerow(entry)
-
-        # funds
-        file_handle.write(str(len(self.parent.get_funds())) + "\n")
-        writer = csv.DictWriter(file_handle,
-                                fieldnames=dfc.fund_fieldnames,
-                                quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for entry in self.parent.get_funds():
-            writer.writerow(entry)
-
-        # transfers
-        file_handle.write(str(len(self.parent.get_transfers())) + "\n")
-        writer = csv.DictWriter(file_handle,
-                                fieldnames=dfc.xfer_fieldnames,
-                                quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for entry in self.parent.get_transfers():
-            writer.writerow(entry)
-
-        # Settings
-        file_handle.write("1\n")
-        writer = csv.DictWriter(file_handle,
-                                fieldnames=dfc.settings_fieldnames,
-                                quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        writer.writerow(self.parent.get_settings())
-
-        file_handle.close()
-
-    """
     def new_data_file(self):
         """Query the user for the name of the database and create it"""
         filename = asksaveasfilename(
@@ -170,7 +81,7 @@ class FileManager:
                  (base_version        TEXT NOT NULL);''')
 
         self.db_conn.execute('''CREATE TABLE account
-             (rec_id              TEXT  PRIMARY KEY  NOT NULL,
+             (rec_id              INTEGER PRIMARY KEY AUTOINCREMENT,
              account_name         TEXT  NOT NULL,
              account_number       TEXT  NOT_NULL,
              opening_date         TEXT  NOT NULL,

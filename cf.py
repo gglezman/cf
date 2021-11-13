@@ -1,4 +1,3 @@
-
 #
 # Author: Greg Glezman
 #
@@ -87,13 +86,12 @@ class CfAnalysis:
         self.process_bonds()
         self.process_funds()
 
-
         ##########################################
         # Apply interest to all interest
         # bearing holdings
         ##########################################
         self.apply_interest()
-        self.logger.log(logging.INFO, "Leaving: {}".format(util.f_name()))
+        self.logger.log(logging.INFO, "{}".format(util.f_name()))
 
     ################################################
     # Support Code
@@ -266,13 +264,13 @@ class CfAnalysis:
                 day=min(start_date.day, days_next_month))
 
     def credit(self, accnt_rec_id, amount, date, comment, credit_type=DEPOSIT_TIME):
-        """Credit account 'accnt' on 'date' in the amount 'amount' with 'comment'.
+        """Credit account 'accnt_rec_id' on 'date' in the 'amount' with 'comment'.
         The register balance will be recalculated and updated"""
 
         #  self.logger.log.info("{0}() {1}, {2}, {3})".format(
         #    util.f_name(), accnt, amount, self.format_date(date)))
 
-        if type(accnt_rec_id) != str or type(amount) != float or type(date) != datetime:
+        if type(accnt_rec_id) != int or type(amount) != float or type(date) != datetime:
             raise TypeError("{0}() : Input type error".format(util.f_name()))
 
         date = date.replace(hour=credit_type)
@@ -281,12 +279,12 @@ class CfAnalysis:
                                                     self.ledger[accnt_rec_id])
 
     def debit(self, accnt_rec_id, amount, date, comment):
-        """Debit account 'accnt' on 'date' in the amount 'amount' with 'comment'"""
+        """Debit account 'accnt_rec_id' on 'date' in the amount 'amount' with 'comment'"""
 
         #  self.logger.log.info("{0}() {1}, {2}, {3})".format(
         #    util.f_name(), accnt, amount, self.format_date(date)))
 
-        if type(accnt_rec_id) != str or type(amount) != float or type(date) != datetime:
+        if type(accnt_rec_id) != int or type(amount) != float or type(date) != datetime:
             raise TypeError("{0}() : Input type error".
                             format(util.f_name()))
 
@@ -354,16 +352,7 @@ class CfAnalysis:
     def reset_ledger(self):
         """This is used to facilitate unit test"""
 
-        # todo - these are all gone !
-        #  Maybe I can build the DB from within the unit test driver
         self.ledger.clear()
-        #self.accounts.clear()
-        #self.cash_accounts.clear()
-        #self.cds.clear()
-        #self.loans.clear()
-        #self.bonds.clear()
-        #self.funds.clear()
-        #self.transfers.clear()
 
     # todo - if I take out internal storage of accounts, CAs, bonds, etc
     #        I need to re-write unit test to work off test database files!
@@ -404,13 +393,13 @@ class CfAnalysis:
         self.logger.log(logging.INFO, "Entering: {}".format(util.f_name()))
 
         # todo entry= { account, balance,  } Use dictionary instead of tuple
-        for entry in self.get_cash_accounts():
+        for entry in self.get_from_db('ca'):
             #  self.logger.log.info("{0} account balance on {1}: ${2} ".format(
             #    entry['account'], entry['opening_date'], entry['balance']))
 
             # The account record holds the opening date for the cash account
-            # the following entry contains account_rec_id, not account name
-            account_rec = self.get_account(entry['account_rec_id'])
+            account_rec = self.get_from_db('account','rec_id', entry['account_rec_id'])[0]
+
             start_date = datetime.strptime(account_rec['opening_date'], dfc.DATE_FORMAT)
             start_date = start_date.replace(hour=INITIAL_DEPOSIT_TIME)
 
@@ -424,21 +413,21 @@ class CfAnalysis:
 
     def validate_transfer(self, entry):
 
-        self.logger.log(logging.INFO, "Entering: {}".format(util.f_name()))
+        #self.logger.log(logging.INFO, "Entering: {}".format(util.f_name()))
 
-        if entry['to_account_rec_id'] == "income":
+        if entry['to_account_rec_id'] == dfc.INCOME_ACCOUNT_ID:
             raise ValueError("{0}(): Transfer destination can't be 'income'".
                              format(util.f_name()))
         else:
-            if entry['to_account_rec_id'] != "expense" and \
+            if entry['to_account_rec_id'] != dfc.EXPENSE_ACCOUNT_ID and \
                     entry['to_account_rec_id'] not in self.ledger:
                 raise ValueError("{0}(): Unknown transfer destination: {1}".
                                  format(util.f_name(), entry['to_account_rec_id']))
-        if entry['from_account_rec_id'] == "expense":
+        if entry['from_account_rec_id'] == dfc.EXPENSE_ACCOUNT_ID:
             raise ValueError("{0}(): Transfer source can't be 'expense'".
                              format(util.f_name()))
         else:
-            if entry['from_account_rec_id'] != "income" and \
+            if entry['from_account_rec_id'] != dfc.INCOME_ACCOUNT_ID and \
                     entry['from_account_rec_id'] not in self.ledger:
                 raise ValueError("{0}(): Unknown transfer source: {1}".
                                  format(util.f_name(), entry['from_account_rec_id']))
@@ -449,21 +438,49 @@ class CfAnalysis:
         Note that transfers may have an inflation factor associated with it.
         If so, the factor is applied before the transfers are entered.
         """
-        transfer_records = self.get_transfers()
+        transfer_records = self.get_from_db('transfer')
 
         self.logger.log(logging.INFO,
                     "Entries in Transfers list: {0}".format(len(transfer_records)))
 
         for entry in transfer_records:
+            #print(entry)
             # Fault if invalid
             self.validate_transfer(entry)
             transfer_dates = self.get_dates(entry['frequency'], self.end_date)
-            transfer_amounts = self.get_inflated_amounts(entry['amount'], entry['inflation'], transfer_dates)
-            #print(transfer_amounts) todo - take this out
+            transfer_amounts = self.get_inflated_amounts(entry['amount'],
+                                                         entry['inflation'],
+                                                         transfer_dates)
 
-            if entry['from_account_rec_id'] == "income":
+            # Find the earliest date both accounts are open
+            if self.ledger[entry['from_account_rec_id']][0][0] > \
+                        self.ledger[entry['to_account_rec_id']][0][0]:
+                opening_date = self.ledger[entry['from_account_rec_id']][0][0]
+            else:
                 opening_date = self.ledger[entry['to_account_rec_id']][0][0]
-            elif entry['to_account_rec_id'] == "expense":
+
+            #print("Opening Date :{}".format(opening_date))
+            #print(transfer_dates)
+            #print(transfer_amounts)
+            #print()
+            for i,transDate in enumerate(transfer_dates):
+                if transDate >= opening_date:
+                    self.debit(entry['from_account_rec_id'],
+                       transfer_amounts[i],  # float(entry['amount']),
+                       transDate,
+                       "Transfer to " + str(entry['to_account_name']) +
+                       ", Note: " + entry['note'])
+                    self.credit(entry['to_account_rec_id'],
+                        transfer_amounts[i],  # float(entry['amount']),
+                        transDate,
+                        "Transfer from " + str(entry['from_account_name'])
+                        + ", Note: " + entry['note'])
+
+        """
+            # select an opening date that is the  
+            if entry['from_account_rec_id'] == dfc.INCOME_ACCOUNT_ID:
+                opening_date = self.ledger[entry['to_account_rec_id']][0][0]
+            elif entry['to_account_rec_id'] == dfc.EXPENSE_ACCOUNT_ID:
                 opening_date = self.ledger[entry['from_account_rec_id']][0][0]
             else:
                 # Earliest of to/from accounts
@@ -475,25 +492,26 @@ class CfAnalysis:
 
             for i, transDate in enumerate(transfer_dates):       # todo use an enumeration here to get an index into the list so I can skip old values
                 if transDate >= opening_date:
-                    if entry['from_account_rec_id'] != "income":
+                    if entry['from_account_rec_id'] != dfc.INCOME_ACCOUNT_ID:
                         if transDate >= self.ledger[entry['from_account_rec_id']][0][0]:
                             self.debit(entry['from_account_rec_id'],
                                        transfer_amounts[i], # float(entry['amount']),
                                        transDate,
-                                       "Transfer to " + entry['to_account_rec_id'] +
+                                       "Transfer to " + str(entry['to_account_rec_id']) +
                                        ", Note: " + entry['note'])
-                    if entry['to_account_rec_id'] != "expense":
+                    if entry['to_account_rec_id'] != dfc.EXPENSE_ACCOUNT_ID:
                         if transDate >= self.ledger[entry['to_account_rec_id']][0][0]:
                             self.credit(entry['to_account_rec_id'],
                                         transfer_amounts[i], # float(entry['amount']),
                                         transDate,
-                                        "Transfer from " + entry['from_account_rec_id']
+                                        "Transfer from " + str(entry['from_account_rec_id'])
                                         + ", Note: " + entry['note'])
+        """
 
     def process_loans(self):
         """Update each account based on loans on top of balances"""
 
-        loan_records = self.get_loans()
+        loan_records = self.get_from_db('loan')
 
         self.logger.log(logging.INFO,"Entries in Loans list: {0}".format(len(loan_records)))
 
@@ -541,7 +559,7 @@ class CfAnalysis:
                         credit_type=SALE_TIME)
 
     def process_cds(self):
-        cd_records = self.get_cds()
+        cd_records = self.get_from_db('cd')
 
         self.logger.log(logging.INFO,"Entries in CDs list: {0}".format(len(cd_records)))
 
@@ -606,7 +624,7 @@ class CfAnalysis:
         #  calc interest based on outstanding days
         #  calc final payment on call date based on call premium
         #
-        bond_records = self.get_bonds()
+        bond_records = self.get_from_db('bond')
         self.logger.log(logging.INFO,"Entries in Bonds list: {0}".format(len(bond_records)))
         for entry in bond_records:
             #print(entry)
@@ -724,13 +742,13 @@ class CfAnalysis:
 
         The fund entry is used to set the balance in the fund.
         """
-        fund_records = self.get_funds()
+        fund_records = self.get_from_db('fund')
         self.logger.log(logging.INFO,"Entries in Funds list: {0}".format(len(fund_records)))
 
         for entry in fund_records:
             entry_date = datetime.strptime(entry['date'], dfc.DATE_FORMAT)
 
-            self.credit(entry['account'],
+            self.credit(entry['account_rec_id'],
                         entry['balance'],
                         entry_date,
                         'balance')
@@ -738,14 +756,15 @@ class CfAnalysis:
 
     def apply_interest(self):
         """Apply interest to all cash accounts"""
-        cash_accounts = self.get_cash_accounts()
+        cash_accounts = self.get_from_db('ca')
         self.logger.log(logging.INFO,
                     "Entries in Cash Accounts: {0}".format(len(cash_accounts)))
         for entry in cash_accounts:
             start_date = datetime.strptime(entry['interest_date'], "%Y-%m-%d")
 
             # push all int payment dates after opening date
-            account_rec = self.get_account(entry['account_rec_id'])
+            #account_rec = self.get_account(entry['account_rec_id'])
+            account_rec = self.get_from_db('account', 'rec_id', entry['account_rec_id'])[0]
             opening_date = datetime.strptime(account_rec['opening_date'], "%Y-%m-%d")
             months_in_period = self.period_to_months(entry['frequency'])
             while opening_date > start_date:
@@ -869,283 +888,26 @@ class CfAnalysis:
 
         return amount_list
 
-# todo - the following is the second get_cash_accounts function !
-    def get_cash_accounts_duplicate(self):
-        """Get a list of cash accounts.
-
-        Read the column names and data from the DB and construct a
-        python style dict to return.
-        """
-        # Get the column names
-        column_names = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO('cash_accounts');")
-        for row in cursor:
-            column_names.append(row[1])  # column 1 has the column name
-        # get the column data
-        cash_account_list = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM cash_accounts")
-        # connect the column names and column data
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            cash_account_list.append(row_dict)
-
-        return cash_account_list
-
-    def get_sorted_accounts_list(self):
+    def get_sorted_accounts_list(self, expense=False, income=False):
         """Return a sorted list of accounts.
 
-        The list contains only the Account Name of the account"""
-        accounts = list()
+        The list contains only the Account Name of the account.
 
-        for record in self.get_accounts():
-            accounts.append(record["account_name"])
-        if accounts:
-            accounts.sort()
+        By default, the expense and income pseudo accounts are removed
+        but thyey can be included by adding the associated parameter."""
+        account_names = list()
 
-        return accounts
-    def get_account(self, account_rec_id):
-        list = self.get_accounts(account_rec_id)
-        return list[0]
+        for record in self.get_from_db('account'):
+            account_names.append(record["account_name"])
 
-    def get_accounts(self, account_rec_id=None):
-        """Return the requested account record(s)
+        if account_names:
+            account_names.sort()
+            if not expense:
+                account_names.remove("expenses")
+            if not income:
+                account_names.remove("income")
 
-        If account_rec_id is given, return the record for only that account.
-        Otherwise return the records for all accounts.
-
-        Read the column names and data from the DB and construct a
-        python style dict to return.
-
-        Return: account_list[] - list of dictionaries
-        """
-        account_list = []
-        if not self.fm.is_data_file_open():
-            return account_list
-
-        # ######################################################
-        # Get the column names to be used for the dictionary
-        # ######################################################
-        column_names = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO('account');")
-        for row in cursor:
-            column_names.append(row[1])  # column 1 has the column name
-        # ######################################################
-        # get the column data
-        # ######################################################
-        if account_rec_id == None:
-            cursor = self.fm.db_conn.execute("SELECT * FROM account")
-        else:
-            cursor = self.fm.db_conn.execute(
-                "SELECT * FROM account WHERE rec_id=\'{}\'".format(account_rec_id))
-        # ######################################################
-        # connect the column names and column data
-        # ######################################################
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            account_list.append(row_dict)
-        return account_list
-
-    def get_cash_accounts(self, account_name=None):
-        """Return the requested account record(s)
-
-        If account_name is given, return the record for only that account.
-        Otherwise return the records for all cash_accounts.
-
-        Read the column names and data from the DB and construct a
-        python style dict to return.
-
-        Return: cash_account_list[] - list of dictionaries
-        """
-        # ######################################################
-        # Get the column names to be used for the dictionary
-        # ######################################################
-        column_names = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO('ca');")
-        for row in cursor:
-            column_names.append(row[1])  # column 1 has the column name
-        # ######################################################
-        # get the column data
-        # ######################################################
-        if account_name == None:
-            cursor = self.fm.db_conn.execute("SELECT * FROM ca")
-        else:
-            cursor = self.fm.db_conn.execu(
-                "SELECT * FROM ca WHERE account_name={}".format(account_name))
-        # ######################################################
-        # connect the column names and column data
-        # ######################################################
-        cash_account_list = []
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            cash_account_list.append(row_dict)
-
-        return cash_account_list
-
-    def get_transfers(self):
-        """Return all the transfer records in the db
-
-         Read the column names and data from the DB and construct a
-         python style dict to return.
-
-         Return: transfer_list[] - list of dictionaries
-         """
-        # ######################################################
-        # Get the column names to be used for the dictionary
-        # ######################################################
-        column_names = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO('transfer');")
-        for row in cursor:
-            column_names.append(row[1])  # column 1 has the column name
-        # ######################################################
-        # get the column data
-        # ######################################################
-        cursor = self.fm.db_conn.execute("SELECT * FROM transfer")
-
-        # ######################################################
-        # connect the column names and column data
-        # ######################################################
-        transfers_list = []
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            transfers_list.append(row_dict)
-
-        return transfers_list
-
-    def get_loans(self):
-        """Return all the loan records in the db
-
-         Read the column names and data from the DB and construct a
-         python style dict to return.
-
-         Return: loan_list[] - list of dictionaries
-         """
-        # ######################################################
-        # Get the column names to be used for the dictionary
-        # ######################################################
-        column_names = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO('loan');")
-        for row in cursor:
-            column_names.append(row[1])  # column 1 has the column name
-        # ######################################################
-        # get the column data
-        # ######################################################
-        cursor = self.fm.db_conn.execute("SELECT * FROM loan")
-
-        # ######################################################
-        # connect the column names and column data
-        # ######################################################
-        loans_list = []
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            loans_list.append(row_dict)
-
-        return loans_list
-
-    def get_cds(self):
-        """Return all the cd records in the db
-
-          Read the column names and data from the DB and construct a
-          python style dict to return.
-
-          Return: cd_list[] - list of dictionaries
-          """
-        # ######################################################
-        # Get the column names to be used for the dictionary
-        # ######################################################
-        column_names = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO('cd');")
-        for row in cursor:
-            column_names.append(row[1])  # column 1 has the column name
-        # ######################################################
-        # get the column data
-        # ######################################################
-        cursor = self.fm.db_conn.execute("SELECT * FROM cd")
-
-        # ######################################################
-        # connect the column names and column data
-        # ######################################################
-        cds_list = []
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            cds_list.append(row_dict)
-
-        return cds_list
-
-    def get_bonds(self):
-        """Return all the bond records in the db
-
-          Read the column names and data from the DB and construct a
-          python style dict to return.
-
-          Return: cd_list[] - list of dictionaries
-          """
-        # ######################################################
-        # Get the column names to be used for the dictionary
-        # ######################################################
-        column_names = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO('bond');")
-        for row in cursor:
-            column_names.append(row[1])  # column 1 has the column name
-        # ######################################################
-        # get the column data
-        # ######################################################
-        cursor = self.fm.db_conn.execute("SELECT * FROM bond")
-
-        # ######################################################
-        # connect the column names and column data
-        # ######################################################
-        bond_list = []
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            bond_list.append(row_dict)
-
-        return bond_list
-
-    def get_funds(self):
-        """Return all the fund records in the db
-
-          Read the column names and data from the DB and construct a
-          python style dict to return.
-
-          Return: cd_list[] - list of dictionaries
-          """
-        # ######################################################
-        # Get the column names to be used for the dictionary
-        # ######################################################
-        column_names = []
-        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO('fund');")
-        for row in cursor:
-            column_names.append(row[1])  # column 1 has the column name
-        # ######################################################
-        # get the column data
-        # ######################################################
-        cursor = self.fm.db_conn.execute("SELECT * FROM fund")
-
-        # ######################################################
-        # connect the column names and column data
-        # ######################################################
-        funds_list = []
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            funds_list.append(row_dict)
-
-        return funds_list
+        return account_names
 
     def get_account_name(self, account_rec_id):
         cursor = self.fm.db_conn.execute(
@@ -1156,8 +918,9 @@ class CfAnalysis:
         # todo - this looks a little light
         return []
 
+    # todo -this can be upgraded
     def get_account_update_method(self, acc_id):
-        for account in self.get_accounts():
+        for account in self.get_from_db('account'):
             if account['rec_id'] == acc_id:
                 return account['update_method']
         return None
@@ -1169,7 +932,7 @@ class CfAnalysis:
                  account, account_rec_id and the update_method.
         """
         account_data = []
-        for rec in self.get_accounts():
+        for rec in self.get_from_db('account'):
             if rec['update_method'] != "Manual":
                 account_data.append({'account_name': rec['account_name'],
                                      'account_rec_id': rec['rec_id'],
@@ -1183,79 +946,80 @@ class CfAnalysis:
         :return: dictionary where account_rec_id is the key to get account_name
         """
         id_map = {}
-        for account in self.get_accounts():
+        for account in self.get_from_db('account'):
             id_map[account['rec_id']] = account['account_name']
         return id_map
 
-    def get_rec_id_from_acnt_name(self, name):
-        for account in self.get_accounts():
+    # todo - this can be adjusted
+    def get_rec_id_from_acnt_name_OBFISCATED(self, name):
+        for account in self.get_from_db('accounts'):
             if account['account_name'] == name:
                 return account['rec_id']
 
         # todo - log the following as an error
         return ""
 
-
     def get_account_rec_id(self, account_name):
         cursor = self.fm.db_conn.execute(
             "SELECT rec_id FROM account WHERE account_name=\'{}\'".format(account_name))
         # todo - verify this
         # todo - is there a better way to access the cursor ?
+        # todo - can I fold this into get_from_db
 
         # todo - the following is used in case there are no accounts yet
         account_rec_id = 0
-        for row in cursor:
-            account_rec_id = row[0]
+        #for row in cursor:
+        #    account_rec_id = row[0]
+        account_rec_id = cursor.fetchone()[0]
+        #print("arid {}".format(account_rec_id))
         return account_rec_id
 
-    def get_account_rec_OBFISCATED(self, account_name):
-        for rec in self.get_accounts():
-            if rec['account_name'] == account_name:
-                return rec
-        return None
-
     def get_from_db(self, table, column=None, value=None):
-        """Return selected data from the specified table/column and match'
+        """Return selected rows from the specified table/column match'
 
-        The table must be specified.
+        If only table must be specified, all rows in the table are returned.
 
-        If a column is specified, return only that column from every row.
-        If the column is not specified, return all columns from all rows
-
-        For value to be specified, column MUST be specified.
-        If value is specified, return the column for all rows where the column
-          data matches the value.
-        Otherwise,  ignore the value of the column data
+        If a column is specified value must also be specified. Any row where
+        'column' data matches 'value' are returned.
 
         Read the column names and data from the DB and construct a python style
         dict to return.
 
         Return: table_content[] - list of dictionaries
         """
+
+
+        """
+        >>> import sqlite3
+        >>> con.row_factory = sqlite3.Row
+        >>> cur = con.cursor()
+        >>> cur.execute("SELECT id, first_name, last_name FROM customers WHERE id = 2")
+        >>> result = cur.fetchone()
+        >>> id, first_name, last_name = result['id'], result['first_name'], result['last_name']
+        >>> print(f"Customer: {first_name} {last_name}'s id is {id}")
+        Customer: Donald Knuth's id is 2
+        """
         self.logger.log(logging.INFO,
                         "get_from_db:  table: {}, column: {}, Value: {} ".format(table, column, value))
         table_content = []
         if not self.fm.is_data_file_open():
-            print("DB not open")
+            self.logger.log(logging.INFO,"DB not open")
             return table_content
 
         column_names = []
 
-        if column == None:
-            # Get the column names to be used for the dictionary
-            cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO(\'{}\');".format(table))
-            for row in cursor:
-                column_names.append(row[1])  # column 1 has the column name
-            # get all of the columns and rows
-            cursor = self.fm.db_conn.execute("SELECT * FROM {}".format(table))
+        # Get the column names to be used for the dictionary
+        cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO(\'{}\');".format(table))
+        for row in cursor:
+            column_names.append(row[1])  # column 1 has the column name
 
+        if column == None:
+            query = "SELECT * FROM {}".format(table)
         else:
-            column_names.append(column)
-            if value == None:
-                cursor = self.fm.db_conn.execute("SELECT {} FROM {}".format(column, table))
-            else:
-                cursor = self.fm.db_conn.execute("SELECT {} FROM {} WHERE {} == {}".\
-                                                 format(column,table, column, value))
+            query = "SELECT * FROM {} WHERE {} == {}".format(table, column, value)
+
+        self.logger.log(logging.INFO,query)
+        cursor = self.fm.db_conn.execute(query)
 
         # connect the column names and column data
         for row in cursor:
@@ -1264,7 +1028,7 @@ class CfAnalysis:
                 row_dict[col_name] = row[i]
             table_content.append(row_dict)
 
-        self.logger.log(logging.INFO,"      {}".format(table_content))
+        #self.logger.log(logging.INFO,"      {}".format(table_content))
         return table_content
 
     def set_setting(self, setting, value):
@@ -1298,9 +1062,10 @@ class CfAnalysis:
         Also delete the rec_id field since its auto incremented by the DB
         """
         if table == "fund" or table == "cd" or table == "ca" or table == "bond" or table == "loan":
-            rec['account_rec_id'] = self.get_rec_id_from_acnt_name(rec['account_name'])
+            rec['account_rec_id'] = self.get_account_rec_id(rec['account_name'])
 
         del rec['rec_id']
+
         values = "VALUES ("
         insert = "Insert into {} (".format(table)
         for key in rec.keys():
@@ -1317,26 +1082,68 @@ class CfAnalysis:
         self.fm.db_conn.execute(insert)
         self.fm.db_conn.commit()
 
+    def delete_db_rec(self, table, rec_id):
+        delete = "Delete from {} where rec_id = \'{}\'".format(table, rec_id)
+        self.logger.log(logging.INFO, delete)
+
+        self.fm.db_conn.execute(delete)
+        self.fm.db_conn.commit()
+
     def account_create(self, rec):
         """User has created a new account. Create the corresponding cash account
 
         Notice we don't specify the rec_id because its is auto-increment.
         """
-        # Todo - records will all need default values
-        # dfc.default_account_balance = 0.0
-        # dfc.default_rate = 0.0
-        # dfc.default_frequence = 'monthly'
-        values = "(VALUES \'{}\', \'{}\', \'{}\', \'{}\', \'{}\',\'{}\',\'{}\')".format(
-            rec['rec_id'],
+
+
+        """
+        A note - wrap all the activities in a transaction
+            try:
+                create()
+                create
+                con.commit()
+            except:
+                con.rollback()
+                Raise.RuntimeError()
+        
+        """
+        # ################################################
+        # First add a record to the account table
+        # ################################################
+        del rec['rec_id']
+
+        values = "VALUES ("
+        insert = "Insert into account ("
+        for key in rec.keys():
+            insert += key + ","
+            values += "\'{}\',".format(rec[key])
+        insert = insert[:-1]  # remove the final comma
+        insert += ")"
+        values = values[:-1]
+        values += ")"
+        insert += values
+        self.logger.log(logging.INFO, insert)
+
+        self.fm.db_conn.execute(insert)
+        self.fm.db_conn.commit()
+
+        # ################################################
+        # Now add a record to the ca table
+        # ################################################
+        values = "VALUES (\'{}\', \'{}\', \'{}\', \'{}\', \'{}\',\'{}\',\'{}\')".format(
+            self.get_account_rec_id(rec['account_name']),
             rec['account_name'],
-            0.0,
-            0.0,
+            0.0,                          # opening balance
+            0.0,                          # default rate
             rec['opening_date'],
             'monthly',
             "")
-        self.fm.db_conn.execute("INSERT INTO ca " +
-              "(account_rec_id,account_name,balance,rate,interest_date,frequency,note) " +
-            values )
+        insert = "Insert into ca "
+        insert += "(account_rec_id,account_name,balance,rate,interest_date,frequency,note) "
+        insert += values
+        self.logger.log(logging.INFO, insert)
+
+        self.fm.db_conn.execute(insert)
         self.fm.db_conn.commit()
 
     def account_delete(self, account):

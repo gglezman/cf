@@ -554,7 +554,7 @@ class MyMenuBar:
 
             self.edit_window_open['account'] = 1
             AccountEditWin(self.parent, 'Accounts', columns,
-                           self.parent.get_accounts(), 'account',
+                           self.parent.get_from_db('account'), 'account',
                            'account_name', 'account_number',
                            validate_func=self.validate_account_entry)
 
@@ -578,7 +578,7 @@ class MyMenuBar:
 
             self.edit_window_open['ca'] = 1
             AccountEditWin(self.parent, 'Cash Accounts', columns,
-                           self.parent.get_cash_accounts(), 'ca',
+                           self.parent.get_from_db('ca'), 'ca',
                            'account_name', 'balance',
                            validate_func=self.validate_ca_entry)
 
@@ -607,7 +607,7 @@ class MyMenuBar:
 
             self.edit_window_open['cd'] = 1
             AccountEditWin(self.parent, 'Certificates of Deposit', columns,
-                           self.parent.get_cds(), 'cd', 'account_name', 'maturity_date',
+                           self.parent.get_from_db('cd'), 'cd', 'account_name', 'maturity_date',
                            validate_func=self.validate_cd_entry)
 
     def edit_loans(self):
@@ -631,7 +631,7 @@ class MyMenuBar:
                 {"heading": "Notes", "key": "note", "width": dfc.FW_MED,
                  "type": "entry", "content": "text"}]
             self.edit_window_open['loan'] = 1
-            AccountEditWin(self.parent, 'Loans', columns, self.parent.get_loans(),
+            AccountEditWin(self.parent, 'Loans', columns, self.parent.get_from_db('loan'),
                            'loan', 'account_name', 'payoff_date',
                            validate_func=self.validate_loan_entry)
 
@@ -673,7 +673,7 @@ class MyMenuBar:
                  'function': self.bond_status_filter}]
 
             self.edit_window_open['bond'] = 1
-            AccountEditWin(self.parent, 'Bonds', columns, self.parent.get_bonds(),
+            AccountEditWin(self.parent, 'Bonds', columns, self.parent.get_from_db('bond'),
                            'bond', 'account_name', 'maturity_date', filters=filters,
                            validate_func=self.validate_bond_entry)
 
@@ -705,17 +705,17 @@ class MyMenuBar:
                  'set': expanded_accnt_set, 'function': self.account_filter}]
 
             self.edit_window_open['fund'] = 1
-            AccountEditWin(self.parent, 'Funds', columns, self.parent.get_funds(),
+            AccountEditWin(self.parent, 'Funds', columns, self.parent.get_from_db('fund'),
                            'fund', 'account_name', 'interest_date',
                            filters=filters,
                            validate_func=self.validate_fund_entry)
 
     def edit_transfers(self):
         if self.edit_window_open['transfer'] == 0:
-            accnt_set1 = self.parent.get_sorted_accounts_list()
-            accnt_set1.append('income')
-            accnt_set2 = self.parent.get_sorted_accounts_list()
-            accnt_set2.append('expense')
+            accnt_set1 = self.parent.get_sorted_accounts_list(income=True)
+            #accnt_set1.append('income')
+            accnt_set2 = self.parent.get_sorted_accounts_list(expense=True)
+            #accnt_set2.append('expense')
 
             columns = [
                 {"heading": "From Account", "key": "from_account_name", "width": dfc.FW_MED,
@@ -752,7 +752,7 @@ class MyMenuBar:
 
             self.edit_window_open['transfer'] = 1
             AccountEditWin(self.parent, 'Scheduled Transfers', columns,
-                           self.parent.get_transfers(), 'transfer',
+                           self.parent.get_from_db('transfer'), 'transfer',
                            'from_account_name', 'to_account_name',  # TODO - how to sort date
                            filters=filters,
                            validate_func=self.validate_xfer_entry)
@@ -1259,35 +1259,38 @@ class CfGui:
     def format_date(self, date):
         return self.ds.format_date(date)
 
-    def get_accounts(self):
+    def get_from_db(self, table, column=None, value=None):
+        return self.ds.get_from_db(table, column, value)
+
+    def get_accounts_OBFISCATED(self):
         return self.ds.get_accounts()
 
     def get_account_rec(self, account):
         return self.ds.get_account_rec(account)
 
-    def get_cash_accounts(self):
+    def get_cash_accounts_OBFISCATED(self):
         return self.ds.get_cash_accounts()
 
-    def get_cds(self):
+    def get_cds_OBFISCATED(self):
         return self.ds.get_cds()
 
-    def get_loans(self):
+    def get_loans_OBFISCATED(self):
         return self.ds.get_loans()
 
-    def get_bonds(self):
+    def get_bonds_OBFISCATED(self):
         return self.ds.get_bonds()
 
     def get_bond_cash_flow(self, bond_entry_from_source):
         return self.ds.bond_cash_flow(bond_entry_from_source)
 
-    def get_funds(self):
+    def get_funds_OBFISCATED(self):
         return self.ds.get_funds()
 
-    def get_transfers(self):
+    def get_transfers_OBFISCATED(self):
         return self.ds.get_transfers()
 
-    def get_sorted_accounts_list(self):
-        return self.ds.get_sorted_accounts_list()
+    def get_sorted_accounts_list(self, expense=False, income=False):
+        return self.ds.get_sorted_accounts_list(expense, income)
 
     def get_new_rec(self, instrument_type):
         return self.fm.get_new_rec(instrument_type)
@@ -1304,6 +1307,9 @@ class CfGui:
     def new_db_rec(self, table, rec):
         self.ds.new_db_rec(table, rec)
 
+    def delete_db_rec(self, table, rec_id):
+        self.ds.delete_db_rec(table, rec_id)
+
     def get_settings(self, column=None):
         """Get the requested setting(s)
 
@@ -1311,7 +1317,7 @@ class CfGui:
         Otherwise, return a dictionary of settings.
 
         """
-        setting = self.ds.get_from_db('setting', column)
+        setting = self.ds.get_from_db('setting')
 
         # At start up, some data is needed before the DB is open.
         if len(setting) == 0:
