@@ -19,8 +19,9 @@ import platform
 # Some useful constants
 #################################
 # The following software version should be updated with every release
-# todo - the SW version is now kept in the DB
 
+
+# todo - the SW version is now kept in the DB
 SW_VERSION = "1.22"
 
 # Field widths for display widgets
@@ -56,8 +57,10 @@ instrument_types = ['ca', 'bond', 'cd', 'loan', 'transfer','setting' ]
 DATE_FORMAT = '%Y-%m-%d'
 SHORT_DATE_FORMAT = '%m/%d'
 
+# the following are rec_id definitions for pseudo accounts
 INCOME_ACCOUNT_ID = 0
 EXPENSE_ACCOUNT_ID = 1
+FIRST_REAL_ACCOUNT = 2
 
 ####################################################
 # Fieldnames for the data file

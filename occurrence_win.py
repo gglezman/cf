@@ -587,9 +587,13 @@ class OccurrenceWin:
     def open_list_win(self):
         """Open a window and fill with the list of generated dates"""
 
-        date_list = ""
+        date_list_text = ""
         for date in self.occ.get_dates():
-            date_list += date.strftime(dfc.DATE_FORMAT) + '\n'
+            date_list_text += date.strftime(dfc.DATE_FORMAT) + '\n'
+
+        if not date_list_text:
+            date_list_text = "There are no events within the current tracking window.\n" + \
+			                "Consider updating the tracking months setting."
 
         # put up a window with the date list
-        ScrollableWin("Occurrence List", date_list, self.win)
+        ScrollableWin("Occurrence List", date_list_text, self.win)

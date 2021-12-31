@@ -267,8 +267,8 @@ class CfAnalysis:
         """Credit account 'accnt_rec_id' on 'date' in the 'amount' with 'comment'.
         The register balance will be recalculated and updated"""
 
-        #  self.logger.log.info("{0}() {1}, {2}, {3})".format(
-        #    util.f_name(), accnt, amount, self.format_date(date)))
+        self.logger.log(logging.INFO,"{0}() account_rec_id: {1}, amount: {2}, {3})".format(
+            util.f_name(), accnt_rec_id, amount, self.format_date(date)))
 
         if type(accnt_rec_id) != int or type(amount) != float or type(date) != datetime:
             raise TypeError("{0}() : Input type error".format(util.f_name()))
@@ -750,7 +750,7 @@ class CfAnalysis:
 
             self.credit(entry['account_rec_id'],
                         entry['balance'],
-                        entry_date,
+                        ca_date,
                         'balance')
             # TODO - how about interest processing ???
 
@@ -759,35 +759,35 @@ class CfAnalysis:
         cash_accounts = self.get_from_db('ca')
         self.logger.log(logging.INFO,
                     "Entries in Cash Accounts: {0}".format(len(cash_accounts)))
-        for entry in cash_accounts:
-            start_date = datetime.strptime(entry['interest_date'], "%Y-%m-%d")
+        for ca in cash_accounts:
+            start_date = datetime.strptime(ca['interest_date'], "%Y-%m-%d")
 
             # push all int payment dates after opening date
-            #account_rec = self.get_account(entry['account_rec_id'])
-            account_rec = self.get_from_db('account', 'rec_id', entry['account_rec_id'])[0]
+            #account_rec = self.get_account(ca['account_rec_id'])
+            account_rec = self.get_from_db('account', 'rec_id', ca['account_rec_id'])[0]
             opening_date = datetime.strptime(account_rec['opening_date'], "%Y-%m-%d")
-            months_in_period = self.period_to_months(entry['frequency'])
+            months_in_period = self.period_to_months(ca['frequency'])
             while opening_date > start_date:
                 start_date = self.get_next_date(start_date,
                                                 months_in_period)
 
             interest_dates = self.get_periodic_dates(start_date,
-                                                     entry['frequency'],
+                                                     ca['frequency'],
                                                      self.end_date)
-            rate_adj = self.period_to_rate_factor(entry['frequency'])
-            rate = (float(entry['rate']) / rate_adj) / 100
+            rate_adj = self.period_to_rate_factor(ca['frequency'])
+            rate = (float(ca['rate']) / rate_adj) / 100
 
             for interest_date in interest_dates:
                 bal = self.get_bal_on_date(interest_date,
-                                           self.ledger[entry['account_rec_id']])
+                                           self.ledger[ca['account_rec_id']])
                 interest = bal * rate
 
                 if interest > 0.0:
-                    self.credit(entry['account_rec_id'], interest, interest_date,
+                    self.credit(ca['account_rec_id'], interest, interest_date,
                                 "Interest", credit_type=INTEREST_TIME)
                 else:
                     # ignore negative interest
-                    self.credit(entry['account_rec_id'], 0.0, interest_date,
+                    self.credit(ca['account_rec_id'], 0.0, interest_date,
                                 "Interest", credit_type=INTEREST_TIME)
 
     @staticmethod
@@ -889,12 +889,12 @@ class CfAnalysis:
         return amount_list
 
     def get_sorted_accounts_list(self, expense=False, income=False):
-        """Return a sorted list of accounts.
+        """Return a sorted list of account names.
 
         The list contains only the Account Name of the account.
 
         By default, the expense and income pseudo accounts are removed
-        but thyey can be included by adding the associated parameter."""
+        but they can be included by adding the associated parameter."""
         account_names = list()
 
         for record in self.get_from_db('account'):
@@ -960,26 +960,45 @@ class CfAnalysis:
         return ""
 
     def get_account_rec_id(self, account_name):
-        cursor = self.fm.db_conn.execute(
-            "SELECT rec_id FROM account WHERE account_name=\'{}\'".format(account_name))
-        # todo - verify this
-        # todo - is there a better way to access the cursor ?
-        # todo - can I fold this into get_from_db
+        """
+        Return just the rec_id for the given account_name
 
-        # todo - the following is used in case there are no accounts yet
-        account_rec_id = 0
-        #for row in cursor:
-        #    account_rec_id = row[0]
-        account_rec_id = cursor.fetchone()[0]
-        #print("arid {}".format(account_rec_id))
+        Note: The query returns a set of tuples, one tuple for each
+              row that matches the query. In my case, one row for each account
+              with a matching rec_id. Of course, by design, rec_ids are
+              unique so there will only be one row (tuple) in the returned set.
+              The tuple will have a component for each column in the row.
+              All components in the tuple are set to None except the first
+              since that is the column that contains the rec_id. (see DB schema)
+        """
+        try:
+            query = "SELECT rec_id FROM account WHERE account_name=\'{}\'".format(account_name)
+            self.logger.log(logging.INFO, query)
+            cursor = self.fm.db_conn.execute(query)
+            #print(cursor.description)
+            account_rec_id = cursor.fetchone()[0]
+
+        except Exception as e:
+            # the following is used in case there are no accounts yet
+            account_rec_id = 0
+
         return account_rec_id
+
+    def get_real_accounts(self, table):
+        """Get a list of real (ie not pseudo) accounts
+
+        This function can be used on the account or cash_account table
+        """
+        accounts = self.get_from_db(table)
+
+        return [i for i in accounts if not (i['rec_id'] < dfc.FIRST_REAL_ACCOUNT)]
 
     def get_from_db(self, table, column=None, value=None):
         """Return selected rows from the specified table/column match'
 
-        If only table must be specified, all rows in the table are returned.
+        If only table is specified, all rows in the table are returned.
 
-        If a column is specified value must also be specified. Any row where
+        If a column is specified, value must also be specified. Any row where
         'column' data matches 'value' are returned.
 
         Read the column names and data from the DB and construct a python style
@@ -1040,6 +1059,29 @@ class CfAnalysis:
         self.fm.db_conn.commit()
 
     def write_to_db(self, table, rec_id, data):
+        """ Write the given mods to the given rec (rec_id)
+
+        table - table being written
+        rec_id - identifies the record in the table
+        data - list of modifications to the record. Each entry in the list is a
+               tuples where each tuple is ( key, new_value)
+
+        In order to shield other pieces of code from the account_rec_id,
+        from/to_account_rec_id, we do the maintenance of these fields in
+        this function based on the content of the corresponding 'name' field.
+
+        Note that while the account_name can be changed in the account table,
+        this table does not have an account_rec_id in the same way other tables do.
+        """
+
+        for mod in data:
+            if mod[0] == 'account_name':
+                if table != 'account':
+                    data.append(('account_rec_id', self.get_account_rec_id(mod[1])))
+            elif mod[0] == 'from_account_name':
+                data.append(('from_account_rec_id', self.get_account_rec_id(mod[1])))
+            elif mod[0] == 'to_account_name':
+                data.append(('to_account_rec_id', self.get_account_rec_id(mod[1])))
         if data:
             update = "Update {} Set ".format(table)
             for mod in data:
@@ -1055,16 +1097,17 @@ class CfAnalysis:
     def new_db_rec(self, table, rec):
         """Add a new record to the DB
 
-        Note that records in several tables include the rec_id of the
-        account that holds the instrument. We'll add that here so the caller
-        doesn't need to know about this complication.
-
-        Also delete the rec_id field since its auto incremented by the DB
+        In order to shield other pieces of code from the account_rec_id,
+        from/to_account_rec_id, we do the maintenance of these fields in
+        this function based on the content of the corresponding 'name' field.
         """
         if table == "fund" or table == "cd" or table == "ca" or table == "bond" or table == "loan":
             rec['account_rec_id'] = self.get_account_rec_id(rec['account_name'])
-
-        del rec['rec_id']
+        elif table == 'transfer':
+            rec['from_account_rec_id'] = self.get_account_rec_id(rec['from_account_name'])
+            rec['to_account_rec_id']   = self.get_account_rec_id(rec['to_account_name'])
+        else:
+            raise RuntimeError("Unknown Table Type : {}".format(table))
 
         values = "VALUES ("
         insert = "Insert into {} (".format(table)
@@ -1102,15 +1145,15 @@ class CfAnalysis:
                 create()
                 create
                 con.commit()
-            except:
+            except Exception e:
                 con.rollback()
-                Raise.RuntimeError()
+                Raise runtimeError()
         
         """
         # ################################################
         # First add a record to the account table
         # ################################################
-        del rec['rec_id']
+        #del rec['rec_id']
 
         values = "VALUES ("
         insert = "Insert into account ("
@@ -1146,50 +1189,83 @@ class CfAnalysis:
         self.fm.db_conn.execute(insert)
         self.fm.db_conn.commit()
 
-    def account_delete(self, account):
-        # todo - figure out how to delete records from the DB
-        for rec in reversed(self.cash_accounts):
-            if rec['account'] == account:
-                self.cash_accounts.remove(rec)
-        for rec in reversed(self.cds):
-            if rec['account'] == account:
-                self.cds.remove(rec)
-        for rec in reversed(self.loans):
-            if rec['account'] == account:
-                self.loans.remove(rec)
-        for rec in reversed(self.bonds):
-            if rec['account'] == account:
-                self.bonds.remove(rec)
-        for rec in reversed(self.funds):
-            if rec['account'] == account:
-                self.funds.remove(rec)
-        for rec in reversed(self.transfers):
-            if rec['from_account_rec_id'] == account or rec['to_account_rec_id'] == account:
-                self.transfers.remove(rec)
+    def account_delete(self, account_rec_id):
+        """An account has been deleted.
+
+        Delete the associated cash account and any other records in other tables
+        associated with this account. Also check if the deleted account is
+        the default_account in the settings. If so, select an alternate account.
+
+        Note the structure of this function should be used as a model for all db functions
+        """
+        rec_list = self.get_from_db('account', column="rec_id", value=account_rec_id )
+        rec = rec_list[0]
+
+        try:
+            for table in ('fund', 'cd', 'ca', 'bond', 'loan'):
+                delete = "Delete from {} where account_name = \'{}\'".format(table, rec['account_name'])
+                self.logger.log(logging.INFO, delete)
+                cursor = self.fm.db_conn.execute(delete)
+
+            delete = "Delete from transfer where from_account_name = \'{}\'".format(rec['account_name'])
+            self.logger.log(logging.INFO, delete)
+            cursor = self.fm.db_conn.execute(delete)
+
+            delete = "Delete from transfer where to_account_name = \'{}\'".format(rec['account_name'])
+            self.logger.log(logging.INFO, delete)
+            cursor = self.fm.db_conn.execute(delete)
+
+            settings = self.get_from_db('setting')
+            if settings[0]['default_account'] == rec['account_name']:
+                accounts = self.get_sorted_accounts_list()
+                print(accounts[0])
+                if len(accounts) > 0:
+                    default_account = accounts[0]
+                else:
+                    default_account = ""
+                update = "UPDATE setting SET default_account =\'{}\'".format(default_account)
+
+                self.logger.log(logging.INFO, update)
+                cursor = self.fm.db_conn.execute(update)
+
+            self.fm.db_conn.commit()
+
+        except Exception as e:
+            self.logger.log(logging.INFO, "Account Delete Exception: {}".format(e))
+            messagebox.showerror("Account Deletion Error","{}".format(e) )
+            self.fm.db_conn.rollback()
+            raise RuntimeError("Account delete failed")
 
     def account_name_changed(self, old_name, new_name):
-        # figure out how to modify records in the DB
-        for rec in self.cash_accounts:
-            if rec['account'] == old_name:
-                rec['account'] = new_name
-        for rec in self.cds:
-            if rec['account'] == old_name:
-                rec['account'] = new_name
-        for rec in self.loans:
-            if rec['account'] == old_name:
-                rec['account'] = new_name
-        for rec in self.bonds:
-            if rec['account'] == old_name:
-                rec['account'] = new_name
-        for rec in self.funds:
-            if rec['account'] == old_name:
-                rec['account'] = new_name
-        for rec in self.transfers:
-            if rec['from_account_rec_id'] == old_name:
-                rec['from_account_rec_id'] = new_name
-            if rec['to_account_rec_id'] == old_name:
-                rec['to_account_rec_id'] = new_name
+        """An account name has changed.
 
+        Go through all tables in the DB  and update the account name
+        """
+        try:
+            for table in ('fund', 'cd', 'ca', 'bond', 'loan'):
+                update = "Update \'{}\' Set account_name = \'{}\' Where account_name = \'{}\'".format(table, new_name, old_name)
+                self.logger.log(logging.INFO, update)
+
+                cursor = self.fm.db_conn.execute(update)
+
+            update = "Update transfer Set from_account_name = \'{}\' where from_account_name = \'{}\'".format(new_name,old_name)
+            self.logger.log(logging.INFO, update)
+            cursor = self.fm.db_conn.execute(update)
+
+            update = "Update transfer Set to_account_name = \'{}\' where to_account_name = \'{}\'".format(new_name,old_name)
+            self.logger.log(logging.INFO, update)
+            cursor = self.fm.db_conn.execute(update)
+
+            update = "Update setting Set default_account = \'{}\' where default_account = \'{}\'".format(new_name,old_name)
+            self.logger.log(logging.INFO, update)
+            cursor = self.fm.db_conn.execute(update)
+
+            self.fm.db_conn.commit()
+
+        except Exception as e:
+            self.logger.log(logging.INFO, "Account Name Change Exception: {}".format(e))
+            self.fm.db_conn.rollback()
+            raise RuntimeError("Account name change failed")
 
     def get_start_date(self):
         return self.start_date
@@ -1237,33 +1313,6 @@ class CfAnalysis:
                     rec['investment_type'], rec['description'],
                     rec['quantity'],rec['value']))
         """
-
-    # todo - the following has been replaced by a function in the file_manager
-    @staticmethod
-    def get_new_rec(instrument_type):
-        """Return an new data file record based on instrument_type.
-
-        The new record will have all the keys appropriate for 
-        the instrument_type and default values appropriate for the key.
-        """
-        if instrument_type == 'account':
-            return dfc.acc_new_rec.copy()
-        elif instrument_type == 'ca':
-            return dfc.ca_new_rec.copy()
-        elif instrument_type == 'bond':
-            return dfc.bond_new_rec.copy()
-        elif instrument_type == 'fund':
-            return dfc.fund_new_rec.copy()
-        elif instrument_type == 'cd':
-            return dfc.cd_new_rec.copy()
-        elif instrument_type == 'loan':
-            return dfc.loan_new_rec.copy()
-        elif instrument_type == 'transfer':
-            new_rec = dfc.xfer_new_rec.copy()
-            new_rec['frequency'] = Occurrences.default_occurrence_spec()
-            return new_rec
-        else:
-            raise TypeError("Invalid instrument_type: {}".format(instrument_type))
 
     # TODO - the following needs work. For weekly, I need to add code to
     # get_periodic.

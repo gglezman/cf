@@ -697,10 +697,9 @@ class AccountEditWin:
 		continuing.
 
 		If there are no validation errors, this method will close the
-		account edit window and write the results to the internal dictionary
-		and to the disk file.
+		account edit window and write the results to the the database.
 
-		If the record is marked for deletion, exclude it from the update.
+		If the record is marked for deletion delete it from the DB.
 
 		If the account list is being edited and an account is being
 		deleted, the parent will be informed.
@@ -708,8 +707,7 @@ class AccountEditWin:
 		For example, the associated cash account will be deleted. If the
 		account holds bonds, CDs, etc, those records will also be deleted.
 		Remember that the data source in this method is only for the
-		instrument being edited. (e.g. bond, CDs,...) This method does not
-		have direct access to other parts of the data file).
+		instrument being edited. (e.g. bond, CDs,...)).
 
 		If the account list is being edited and a new account is being added,
 		the parent will be informed. (The parent is responsible for adding
@@ -727,7 +725,7 @@ class AccountEditWin:
 					return
 
 		# Prevent duplicate account names. This is done here rather than in the
-		# the validate function because the validate function only sees 1 record
+		# validate function because the validate function only sees 1 record at a time
 		account_names = []
 		if self.instrument_type == 'account':
 			for rec in self.data_source:
@@ -741,50 +739,32 @@ class AccountEditWin:
 						"Each Account Name must be unique!")
 					return
 
-		# Deal with special record changes to the account list:
-		#  . new account record - inform the parent
-		#  . modified account_name in an account record - inform parent
-		#  . deleted an account record -inform the parent
-		# todo this could be cleaned up to check instrument type earlier. it will be much clearer
-		"""
-		if self.instrument_type == 'account':
-			for rec in self.data_source:
-				if 'deleteKey' in rec and not 'newRec' in rec:
-					# inform the parent an account has been deleted
-					# todo - clean the record?
-					# todo - delete the rec from the db
-				elif 'newRecKey' in rec and not 'deleteKey'in rec:
-					self.clean_data_rec(rec)
-					# todo - previously a list of new accounts was kept and returned
-					#  to menu bar which asked about initializing the account
-					self.parent.account_create(rec)
-				elif 'accNameChangedKey' in rec:
-					# todo - can I get the old account name from the old_data_Source
-					self.parent.account_name_changed(rec['accNameChangedKey'], # old name
-				                                     rec['account_name'] )      # new name
+		# look for records which have changed. All new records are at the end.
+		# The initial scan is performed based on the number of records in the
+		# original data source
 
-        """
-		# look for records which have changed. All new records are at the end
-		modified_data = []
+		# mod_rec_data is a list of tuples defining (key,data) for each change
+		mod_rec_data = []
 		for rec_num,rec in enumerate(self.data_source_orig):
 			if 'deleteKey' in self.data_source[rec_num]:
 				if self.instrument_type == 'account':
 					pass
 					# inform the parent to delete the all associated records
-					#self.parent.account_delete(rec['rec_id'])  # account_delete must accept rec_id
+					self.parent.account_delete(rec['rec_id'])
 				self.parent.delete_db_rec(self.instrument_type, rec['rec_id'])
 			else:
-				modified_data.clear()
+				mod_rec_data.clear()
 				for key in rec.keys():
 					if self.data_source[rec_num][key] != rec[key]:
-						modified_data.append( (key, self.data_source[rec_num][key]))
-				if modified_data:
+						if self.instrument_type == 'account' and key == 'account_name':
+							self.parent.account_name_changed(rec[key],                        # old name
+															 self.data_source[rec_num][key])  # new name
+						mod_rec_data.append((key, self.data_source[rec_num][key]))
+				if mod_rec_data:
 					self.parent.write_to_db(self.instrument_type,
 					    					self.data_source[rec_num]['rec_id'],
-						    				modified_data)
+						    				mod_rec_data)
 		# look for new records
-		#print(len(self.data_source))
-		#print(len(self.data_source_orig))
 		if len(self.data_source) > len(self.data_source_orig):
 			#print("We have new records")
 			for i in range(len(self.data_source_orig),len(self.data_source)):
@@ -796,19 +776,7 @@ class AccountEditWin:
 					else:
 						self.parent.new_db_rec(self.instrument_type,self.data_source[i])
 
-
-
-
-		# replace the official data source with the modified
-		# todo - clean this up
-		#self.clean_data_source()
-		#self.data_source_orig.clear()
-		#for entry in self.data_source:
-		#	self.data_source_orig.append(entry)
-
-		#self.parent.fm.write_data_file()
-		# Updated account data - restart everything
-		# todo - restart takes seconds !!!!
+		# restart to accomadate all the changes
 		self.parent.restart()
 
 		new_accounts = []   #see todo above
@@ -1108,10 +1076,10 @@ class ActionsOnInstrument:
 		call_text = ''
 
 		if instrument_type == 'account':
-			title = "{}:   {}".format(description, record['account'])
+			title = "{}:   {}".format(description, record['account_name'])
 			delete_text += " account"
 		elif instrument_type == 'ca':
-			title = "{}:   {}".format(description, record['account'])
+			title = "{}:   {}".format(description, record['account_name'])
 			delete_text += " cash account"
 		elif instrument_type == 'bond':
 			title = "{}: {}".format(description, record['cusip'])
@@ -1336,7 +1304,7 @@ class ActionsOnInstrument:
 		rec = self.data_source[self.id]
 
 		display_data = OrderedDict()
-		display_data['account'] = 'Account'
+		display_data['account_name'] = 'Account'
 		display_data['issuer'] = 'Description'
 		display_data['purchase_date'] = 'Settlement Date'
 		display_data['maturity_date'] = 'Maturity'
@@ -1349,13 +1317,13 @@ class ActionsOnInstrument:
 		display_data['frequency'] = 'Pay Frequency'
 		display_data['fee'] = 'Fees'
 		display_data['moodys_rating'] = "Moody's Rating"
-		display_data['s&p_rating'] = 'S&P Rating'
+		display_data['snp_rating'] = 'S&P Rating'
 		display_data['next_call_date'] = 'Call Date'
 		display_data['product_type'] = 'Product Type'
 
 		text = "CUSIP: {}\n\n".format(rec['cusip'])
 		for key in display_data.keys():
-			text += "{:18} : {}\n".format(display_data[key], rec[key])
+			text += "{:18} : {}\n".format(display_data[key], rec[key]) #key is account!!!!
 		ScrollableWin("Bond Details", text, self.parent_win)
 
 	def bond_call(self):
@@ -1377,29 +1345,32 @@ class ActionsOnInstrument:
 
 	def get_inflated_amounts(self):
 		"""Get a list of transfer amounts associated with the current record.
-		   Inflate the amounts based on the inflation factor.
-	       Use the dates specified in the current record.
+		Inflate the amounts based on the inflation factor.
+	    Use the dates specified in the current record.
 	    """
 		transfer_spec = self.data_source[self.id]
 
-		end_date = self.parent.get_tracking_end_date()  # todo - take this out
 		end_date = self.account_edit.tracking_end_date
 		occ = Occurrences(transfer_spec['frequency'], end_date)
 		dates = occ.get_dates()
-		current_year = dates[0].year
-
-		amounts = self.parent.get_inflated_amounts(transfer_spec['amount'], transfer_spec['inflation'], occ.get_dates())
 
 		text = ""
-		if len(dates) == len(amounts):
-			for i, date in enumerate(dates):
-				if date.year != current_year:
-					text += '\n'
-					current_year = date.year
-				text += "{}  ".format(date.strftime(dfc.DATE_FORMAT))
-				text += "${:,.2f}\n".format(amounts[i])
+		if dates:
+			current_year = dates[0].year
+			amounts = self.parent.get_inflated_amounts(transfer_spec['amount'], transfer_spec['inflation'], occ.get_dates())
+
+			if len(dates) == len(amounts):
+				for i, date in enumerate(dates):
+					if date.year != current_year:
+						text += '\n'
+						current_year = date.year
+					text += "{}  ".format(date.strftime(dfc.DATE_FORMAT))
+					text += "${:,.2f}\n".format(amounts[i])
+			else:
+				text = "Error - length mismatch on dates and amounts"
 		else:
-			text = "Error - length mismatch on dates and amounts"
+			text = "There are no events within the current tracking window.\n" + \
+			       "Consider updating the tracking months setting."
 
 		ScrollableWin("Transfer Schedule", text, self.parent_win)
 
@@ -1623,10 +1594,9 @@ class NewInstrument:
 		"""Create a new instance of an instrument.
 
 		New is always triggered from AccountEdit, therefore the
-		column_descriptor list is available.  With that we can construct
-		a 'new' window which matches the Account Edit window.
+		column_descriptor list is available. With that we can construct a
+		'new' window which matches the Account Edit window.
 		"""
-
 		self.account_edit_obj = account_edit_obj
 		self.column_descriptor = column_descriptor
 		self.rec = record
@@ -1930,15 +1900,17 @@ def update_rec_from_widgets(rec, column_descriptor, widget_row, instrument_type)
 	the record associated with that row.
 
 	We look for changes to the account name if the account list is being edited."""
+	# todo - take the above comment out
 
 	for col, column in enumerate(column_descriptor):
 		if column["type"] == "entry":
 			# watch for account_name changes
 			if instrument_type == 'account' and column['key'] == 'account_name':
 				# Don't apply the nameChanged key to a new record - one which starts with "" name
+				# it won't pass validation but we still don't want it marked 'changed'
 				if rec[column['key']] != widget_row[col].get() and rec[column['key']] != "":
 					rec['accNameChangedKey'] = rec[column['key']]   # save the old name for now
-					rec[column['key']] = widget_row[col].get()       # update with the new name#729
+					rec[column['key']] = widget_row[col].get()       # update with the new name
 			if column["content"] == 'text' or column["content"] == 'cusip':
 				rec[column['key']] = widget_row[col].get()
 			else:

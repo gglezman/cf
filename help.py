@@ -211,6 +211,7 @@ The start date can neither precede the current date nor be equal to or follow th
 Author: Gregory Glezman".format(dfc.SW_VERSION)
 }
 
+# todo the version information and date should be pulled from the DB
 
 class Help:
     def __init__(self, topic, master=None):

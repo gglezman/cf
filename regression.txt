@@ -19,7 +19,7 @@ python3 cf.py
 
 
 Group 1 - Startup and Cash Accounts
-Test: New data File
+Test: New database File
 Test: Add Account
 Test: Add Multipl Accounts
 ------
@@ -27,7 +27,7 @@ ACTION -
     Fire up the GUI
     File / New Data file
         test33
-    Edit  / Account
+    Edit  / Accounts
         NEW
             Brokerage_1
             12345
@@ -63,7 +63,7 @@ ACTION
         UPDATE
  DO NOT EXIT
  
-File / New Data File
+File / New Database File
          test34 / Save
 VERIY
      Account list is empty
@@ -116,6 +116,8 @@ VERIFY
     LINUX - the Actions menu should close and open along with the
             Add/Edit window. You should be able to close/open more
             Actions menus on the Add/Edit window
+            No longer the case- The behavior is now similair to Windows
+            were thebond window closes but the Actions window remains open.
     WINDOWS - the Actions menu will not close with the Edit Bonds window
             Even worse, it gets pushed to the back of the stack and
             must be closed manually

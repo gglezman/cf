@@ -554,7 +554,7 @@ class MyMenuBar:
 
             self.edit_window_open['account'] = 1
             AccountEditWin(self.parent, 'Accounts', columns,
-                           self.parent.get_from_db('account'), 'account',
+                           self.parent.get_real_accounts('account'), 'account',
                            'account_name', 'account_number',
                            validate_func=self.validate_account_entry)
 
@@ -572,13 +572,13 @@ class MyMenuBar:
                  "type": "entry", "content": "rate"},
                 {"heading": "Interest Date", "key": "interest_date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
-                {"heading": "Pay\nFrequency", "key": "frequency", "width": dfc.FW_SMALL,
+                {"heading": "Interest\nFrequency", "key": "frequency", "width": dfc.FW_SMALL,
                  "type": "combo", "content": compound1},
             ]
 
             self.edit_window_open['ca'] = 1
             AccountEditWin(self.parent, 'Cash Accounts', columns,
-                           self.parent.get_from_db('ca'), 'ca',
+                           self.parent.get_real_accounts('ca'), 'ca',
                            'account_name', 'balance',
                            validate_func=self.validate_ca_entry)
 
@@ -657,7 +657,7 @@ class MyMenuBar:
                  "type": "entry", "content": "dollars"},
                 {"heading": "Maturity\nDate", "key": "maturity_date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
-                {"heading": "Pay\nFrequency", "key": "frequency", "width": dfc.FW_SMALL,
+                {"heading": "Coupon\nFrequency", "key": "frequency", "width": dfc.FW_SMALL,
                  "type": "combo", "content": compound1},
                 {"heading": "CUSIP", "key": "cusip", "width": dfc.FW_SMALL,
                  "type": "entry", "content": "cusip"},
@@ -797,7 +797,7 @@ class MyMenuBar:
     def account_filter(accnt, rec):
         """Filter a bond based on the given account criteria """
 
-        if accnt == 'All' or accnt == rec['account']:
+        if accnt == 'All' or accnt == rec['account_name']:
             return True
         else:
             return False
@@ -806,7 +806,7 @@ class MyMenuBar:
     def to_account_filter(accnt, rec):
         """Filter a bond based on the given account criteria """
 
-        if accnt == 'All' or accnt == rec['to_account']:
+        if accnt == 'All' or accnt == rec['to_account_name']:
             return True
         else:
             return False
@@ -815,7 +815,7 @@ class MyMenuBar:
     def from_account_filter(accnt, rec):
         """Filter a bond based on the given account criteria """
 
-        if accnt == 'All' or accnt == rec['from_account']:
+        if accnt == 'All' or accnt == rec['from_account_name']:
             return True
         else:
             return False
@@ -878,7 +878,7 @@ class MyMenuBar:
 
         elif rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("account", column_desc))
+                    self.get_column_heading("account_name", column_desc))
 
         elif rec["bond_price"] < 50 or rec["bond_price"] > 150:
             return header + "\"{}\" is out of range ($50 - $150).".format(
@@ -957,11 +957,11 @@ class MyMenuBar:
         header = ""
         if rec["from_account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("from_account", column_desc))
+                    self.get_column_heading("from_account_name", column_desc))
 
         elif rec["to_account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("to_account", column_desc))
+                    self.get_column_heading("to_account_name", column_desc))
 
         elif rec["amount"] == 0.0:
             return header + "\"{}\" can not be zero.".format(
@@ -1020,7 +1020,7 @@ class MyMenuBar:
         header = ""
         if rec["account_name"] == "":
             return header + "\"{}\" may not be left blank.".format(
-                    self.get_column_heading("account", column_desc))
+                    self.get_column_heading("account_name", column_desc))
 
         elif rec["frequency"] == "":
             return header + "\"{}\" must be a valid entry.".format(
@@ -1041,7 +1041,7 @@ class MyMenuBar:
 
         elif rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("account", column_desc))
+                    self.get_column_heading("account_name", column_desc))
 
         elif rec["purchase_price"] <= 0:
             return header + "\"{}\" may not be zero.".format(
@@ -1081,7 +1081,7 @@ class MyMenuBar:
 
         if rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("account", column_desc))
+                    self.get_column_heading("account_name", column_desc))
 
         elif rec["balance"] <= 0:
             return header + "\"{}\" must <be greater than zero.".format(
@@ -1222,7 +1222,6 @@ class CfGui:
     def update_text(self):
         # A new data file may have no accounts
         active_account_id = self.bf.get_active_account_id()
-        print("Active Accont is : {}".format(active_account_id))
         if active_account_id != "":
             accnt_data = self.ds.get_register(active_account_id)
             self.tf.show_text(accnt_data)
@@ -1261,6 +1260,9 @@ class CfGui:
 
     def get_from_db(self, table, column=None, value=None):
         return self.ds.get_from_db(table, column, value)
+
+    def get_real_accounts(self, table):
+        return self.ds.get_real_accounts(table)
 
     def get_accounts_OBFISCATED(self):
         return self.ds.get_accounts()

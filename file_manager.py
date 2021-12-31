@@ -35,7 +35,7 @@ class FileManager:
         self.db_conn = None
         self.gui = None
 
-    # todo - once I stop reading settinsg on open, I can delete selg.gui
+    # todo - once I stop reading settings on open, I can delete selg.gui
     def set_gui(self, gui):
         self.gui = gui
 
@@ -77,8 +77,11 @@ class FileManager:
         """
         self.db_conn = sqlite3.connect(filename)
 
+        # The following is required for foreign key constraints to work
+        self.db_conn.execute("PRAGMA foreign_keys = 1")
+
         self.db_conn.execute('''CREATE TABLE version_info
-                 (base_version        TEXT NOT NULL);''')
+            (base_version        TEXT NOT NULL);''')
 
         self.db_conn.execute('''CREATE TABLE account
              (rec_id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,7 +94,7 @@ class FileManager:
 
         self.db_conn.execute('''CREATE TABLE bond
              (rec_id              INTEGER PRIMARY KEY AUTOINCREMENT,
-             account_rec_id       TEXT NOT NULL,
+             account_rec_id       INTEGER NOT NULL,
              account_name         TEXT  NOT NULL,
              bond_price           REAL NOT NULL,
              quantity             INT,
@@ -115,7 +118,7 @@ class FileManager:
 
         self.db_conn.execute('''CREATE TABLE ca
              (rec_id              INTEGER PRIMARY KEY AUTOINCREMENT,
-             account_rec_id       TEXT NOT NULL,
+             account_rec_id       INTEGER NOT NULL,
              account_name         TEXT  NOT NULL,
              balance              REAL,
              rate                 REAL,
@@ -126,7 +129,7 @@ class FileManager:
 
         self.db_conn.execute('''CREATE TABLE cd
              (rec_id              INTEGER PRIMARY KEY AUTOINCREMENT,
-             account_rec_id       TEXT NOT NULL,
+             account_rec_id       INTEGER NOT NULL,
              account_name         TEXT  NOT NULL,
              purchase_price       REAL,
              quantity             INT,
@@ -139,7 +142,7 @@ class FileManager:
 
         self.db_conn.execute('''CREATE TABLE fund
              (rec_id              INTEGER PRIMARY KEY AUTOINCREMENT,
-             account_rec_id       TEXT NOT NULL,
+             account_rec_id       INTEGER NOT NULL,
              account_name         TEXT  NOT NULL,
              symbol               TEXT,
              date                 TEXT,
@@ -149,10 +152,10 @@ class FileManager:
 
         self.db_conn.execute('''CREATE TABLE transfer
              (rec_id              INTEGER PRIMARY KEY AUTOINCREMENT,
-             from_account_rec_id  TEXT NOT NULL,
-             to_account_rec_id    TEXT NOT NULL,
-             from_acount_name     TEXT NOT NULL,
-             to_acount_name       TEXT NOT NULL,
+             from_account_rec_id  INTEGER NOT NULL,
+             to_account_rec_id    INTEGER NOT NULL,
+             from_account_name     TEXT NOT NULL,
+             to_account_name       TEXT NOT NULL,
              amount               REAL,
              frequency            TEXT,
              inflation            REAL,
@@ -160,7 +163,7 @@ class FileManager:
 
         self.db_conn.execute('''CREATE TABLE loan
              (rec_id              INTEGER PRIMARY KEY AUTOINCREMENT,
-             account_rec_id       TEXT NOT NULL,
+             account_rec_id       INTEGER NOT NULL,
              account_name         TEXT  NOT NULL,
              balance              REAL,
              rate                 REAL,
@@ -168,8 +171,7 @@ class FileManager:
              payoff_date          TEXT,
              frequency            TEXT,
              note                 TEXT,
-             FOREIGN KEY(account_rec_id) REFERENCES account(rec_id)
-             );''')
+             FOREIGN KEY(account_rec_id) REFERENCES account(rec_id));''')
 
         self.db_conn.execute('''CREATE TABLE setting
             (
@@ -187,34 +189,115 @@ class FileManager:
 
         self.db_conn.commit()
 
+        # ################################################
+        # create the two pseudo accounts used for tracking
+        # ################################################
+
+        # ################################################
+        # Add the income record to the account table
+        # ################################################
+        values = "VALUES ( {}, \'{}\',\'{}\', \'{}\', \'{}\', \'{}\',\'{}\')" \
+            .format(
+                dfc.INCOME_ACCOUNT_ID,   # rec_id
+                'income',                # account_name
+                0,                       # account_number
+                '2021-10-25',            # opening_date  todo
+                'checking',              # account_type
+                'Manual',                # Update method
+                'Pseudo account')        # Note
+        insert = "INSERT INTO account "
+        insert += "(rec_id, account_name,account_number,opening_date,account_type,update_method,note) "
+        insert += values
+
+        self.db_conn.execute(insert)
+
+        # ################################################
+        # Add the income record to the ca table
+        # ################################################
+        values = "VALUES ( {},{}, \'{}\', \'{}\', \'{}\', \'{}\',\'{}\',\'{}\')" \
+            .format(
+                dfc.INCOME_ACCOUNT_ID,   # rec_id
+                dfc.INCOME_ACCOUNT_ID,   # Account_rec_id - see above
+                'income',                # account name
+                0.0,                     # opening balance
+                0.0,                     # default rate
+                '2021-10-31',            # interest date
+                'monthly',               # frequency
+                'Pseudo account')        # note
+        insert = "INSERT INTO ca "
+        insert += "(rec_id,account_rec_id,account_name,balance,rate,interest_date,frequency,note) "
+        insert += values
+
+        self.db_conn.execute(insert)
+
+        # ################################################
+        # Add the expense record to the account table
+        # ################################################
+        values = "VALUES ({}, \'{}\', \'{}\', \'{}\', \'{}\', \'{}\',\'{}\')" \
+            .format(
+                dfc.EXPENSE_ACCOUNT_ID,  # Rec_id
+                'expenses',              # account_name
+                0,                       # account_number
+                '2021-10-25',            # opening_date
+                'checking',              # account_type
+                'Manual',                # Update method
+                'Pseudo account')        # Note
+        insert = "INSERT INTO account "
+        insert += "(rec_id,account_name,account_number,opening_date,account_type,update_method,note) "
+        insert += values
+        self.db_conn.execute(insert)
+
+        # ################################################
+        # Add the expense record to the ca table
+        # ################################################
+        values = "VALUES ({},{}, \'{}\', \'{}\', \'{}\', \'{}\',\'{}\',\'{}\')" \
+            .format(
+                dfc.EXPENSE_ACCOUNT_ID,  # rec_id
+                dfc.EXPENSE_ACCOUNT_ID,  # account_rec_id - see above
+                'expenses',              # account nme
+                0.0,                     # opening balance
+                0.0,                     # default rate
+                '2021-10-31',            # interest date  todo
+                'monthly',               # frequency
+                'Pseudo account')        # note
+        insert = "INSERT INTO ca "
+        insert += "(rec_id,account_rec_id,account_name,balance,rate,interest_date,frequency,note) "
+        insert += values
+        self.db_conn.execute(insert)
+
+        self.db_conn.commit()
+
     @staticmethod
     def get_new_rec(instrument_type):
         """Return an new data file record based on instrument_type.
 
         The new record will have all the keys appropriate for
         the instrument_type and default values appropriate for the key.
+
+        Note - new records do not contain a rec_id. The rc_id is added by and
+        its value calculated by the db.
         """
-        acc_new_rec = {'rec_id': "", 'account_name':'','account_number': '',
+        acc_new_rec = {'account_name':'','account_number': '',
                        'opening_date': "", 'account_type':"",
                        'update_method':"Manual", 'note': ""}
-        ca_new_rec = {'rec_id':'', 'account_rec_id': "", 'account_name':'','balance': 0.0, 'rate': 0.0,
+        ca_new_rec = {'account_rec_id': "", 'account_name':'','balance': 0.0, 'rate': 0.0,
                       'interest_date': "", 'frequency': "monthly", 'note': ""}
-        bond_new_rec = {'rec_id':'', 'account_rec_id': "", 'account_name':'','bond_price': 0.0, 'quantity': 0,
+        bond_new_rec = {'account_rec_id': "", 'account_name':'','bond_price': 0.0, 'quantity': 0,
                         'coupon': 0.0, 'fee': 0.0, 'purchase_date': "", 'maturity_date': "",
                         'frequency': "", 'issuer': "", 'cusip': "",
                         'call_date': "None", 'call_price': 0.0,
                         'most_recent_price': 0.0, 'moodys_rating': "", 'product_type': "",
                         'snp_rating': "", 'most_recent_value': 0.0, 'next_call_date': "None",
                         'est_yield': 0.0}
-        fund_new_rec = {'rec_id':'', 'account_rec_id': "", 'account_name':'','symbol': "", 'date': "", 'balance': 0.0,
+        fund_new_rec = {'account_rec_id': "", 'account_name':'','symbol': "", 'date': "", 'balance': 0.0,
                         'est_roi': 0.0}
-        xfer_new_rec = {'rec_id":'', ''from_account_rec_id': "", 'to_account_rec_id': "",
+        xfer_new_rec = {'from_account_rec_id': "", 'to_account_rec_id': "",
                         'from_account_name':'', 'to_account_name':'',
                         'amount': 0.0, 'frequency': "", 'inflation':0, 'note': ""}
-        loan_new_rec = {'rec_id':'', 'account_rec_id': "", 'account_name':'','balance': 0.0,
+        loan_new_rec = {'account_rec_id': "", 'account_name':'','balance': 0.0,
                         'rate': 0.0, 'orig_date': "", 'payoff_date': "",
                         'frequency': "", 'note': ""}
-        cd_new_rec = {'rec_id':'', 'account_rec_id': "", 'account_name':'','purchase_price': 0.0, 'quantity': 0,
+        cd_new_rec = {'account_rec_id': "", 'account_name':'','purchase_price': 0.0, 'quantity': 0,
                       'rate': 0.0, 'purchase_date': "", 'maturity_date': "", 'frequency': "",
                       'cusip': ""}
 
