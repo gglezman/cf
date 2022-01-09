@@ -1,15 +1,13 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to present a GUI to the cash flow report.
 #
 #  To Do
-#   . datepicker widget - if month has 6 rows, the botom buttons are cut off
+#   . datepicker widget - if month has 6 rows, the bottom buttons are cut off
 #   . scheduled transfers, date ordering (click on a date) doesn't work properly
 #   . Help - review help text
 #   . Architectural
@@ -26,7 +24,7 @@
 #                                  recorded and I can fix the date sorting
 #         option 2 - manually adjust balance in funds and CA
 #              Issue - this can't be planned for future events hence you can't
-#                      prdedict / analyze
+#                      predict / analyze
 #                     - this option is pretty much useless
 #  *****  option 3 - do I allow transfers from fund to CA and forget about sales
 #                     solution 1 - I would have to beef up the transfer page
@@ -39,15 +37,15 @@
 #                         : if bond data is imported, do we import the CA amount as well?
 #                              should this possibly affect the CA?
 #                         : if fund data iss imported, do we import CA amount as well?
-#                              should this possibly affec the CA?
+#                              should this possibly affect the CA?
 #     - scheduled transfers - date sort - I show the next occurrence in the transfer window,
-#                                      but it looks like I sort based on the first ocurrence?
+#                                      but it looks like I sort based on the first occurrence?
 #   . General
 #     - File / Validate Data File
 #       . this would be nice to have, at least a framework
 #       . this could be run on all start-ups
 #   . Import Bonds from Fid
-#     - determine how the 'add'will work
+#     - determine how the 'add' will work
 #       - AccountEdit is the best candidate for update
 #          - should I let them pile up, throttle or auto add all?
 #          - possibly create a list with Add/Discard buttons in-line
@@ -140,11 +138,11 @@
 #      main window. When I click on the error window the main window
 #      comes to the top
 # !!3b. Most pop-ups immediately hide behind the top window
-#       - Bond Cash Flow Details hidesbehind the bond window
+#       - Bond Cash Flow Details hides behind the bond window
 #       - Bond Call hides behind the bond window
 #    4. Edit Cash accounts - Opening Date field is to narrow
 #    5. AccountEdit - Deleted instrument does not show properly
-#    6. sceduled transfers / left click on date to bring up change window
+#    6. scheduled transfers / left click on date to bring up change window
 #        the window is to small, buttons on the bottom are hidden
 # Keep the next two statements in order so ttk widgets override TK widgets
 import tkinter as tk
@@ -160,7 +158,6 @@ from import_win import ImportAccountsWin
 from import_win import ImportBondDetailsWin
 from import_support import ImportMethodsSupported
 import gui as gui
-import file_manager as fm
 import cf_styles
 import utils as local_util
 # todo - the following line should go away
@@ -178,7 +175,7 @@ class GraphFrame:
         self.width = w
         self.height = h
         self.pop_up = None
-        self.accnt_data = []
+        self.account_data = []
         self.pillar_edges = None
 
         self.frame = local_util.add_frame(master)
@@ -189,14 +186,14 @@ class GraphFrame:
         self.canvas.bind("<Configure>", self.configure)
         self.canvas.bind("<Motion>", self.motion)
 
-    def graph_data(self, accnt_data):
+    def graph_data(self, account_data):
         """Graph the provided account data. Each entry in the list 
         has datetime and amount component. """
 
-        self.accnt_data = accnt_data
+        self.account_data = account_data
         self.pillar_edges = []  # (xStart, xEnd, Y)
 
-        if not accnt_data:
+        if not account_data:
             return
 
         axis_pad = 15
@@ -211,7 +208,7 @@ class GraphFrame:
         height = self.height - axis_pad  # the canvas
 
         # Number and width of pillars
-        num_pillars = len(accnt_data)
+        num_pillars = len(account_data)
         if num_pillars == 0:
             # No data yet.  Fake the data to avoid bad things
             num_pillars = 1
@@ -229,7 +226,7 @@ class GraphFrame:
 
         # Height of pillars
         tallest = 1  # set to 1 to avoid div-by-zero on new data file
-        for entry in accnt_data:
+        for entry in account_data:
             if entry[1] > tallest:
                 tallest = entry[1]
         scale = (height - headroom_pad) / tallest
@@ -252,26 +249,26 @@ class GraphFrame:
             # self.canvas.create_line( tm, height, tm, height+tick_mark_height)
             # top left, bottom right of rectangle
             self.canvas.create_rectangle(
-                    tm - pillar_width / 2,
-                    height - (accnt_data[i][1] * scale),
-                    tm + pillar_width / 2,
-                    height,
-                    fill='blue')
+                tm - pillar_width / 2,
+                height - (account_data[i][1] * scale),
+                tm + pillar_width / 2,
+                height,
+                fill='blue')
             # label the height of the pillar
-            self.canvas.create_text(tm, height - (accnt_data[i][1] * scale) - 5,
-                                    text="{:.0f}".format(accnt_data[i][1]))
+            self.canvas.create_text(tm, height - (account_data[i][1] * scale) - 5,
+                                    text="{:.0f}".format(account_data[i][1]))
             if self.parent.get_granularity() == "Weekly":
-                date = "{}/{}".format(accnt_data[i][0].month,
-                                      accnt_data[i][0].day)
+                day = "{}/{}".format(account_data[i][0].month,
+                                     account_data[i][0].day)
             elif self.parent.get_granularity() == "Monthly":
-                date = "{}/{}/{}".format(accnt_data[i][0].month,
-                                         accnt_data[i][0].day,
-                                         accnt_data[i][0].year - 2000)
+                day = "{}/{}/{}".format(account_data[i][0].month,
+                                        account_data[i][0].day,
+                                        account_data[i][0].year - 2000)
             else:
-                date = "{}/{}/{}".format(accnt_data[i][0].month,
-                                         accnt_data[i][0].day,
-                                         accnt_data[i][0].year)
-            self.canvas.create_text(tm, self.height - (axis_pad / 2), text=date)
+                day = "{}/{}/{}".format(account_data[i][0].month,
+                                        account_data[i][0].day,
+                                        account_data[i][0].year)
+            self.canvas.create_text(tm, self.height - (axis_pad / 2), text=day)
             # TODO
             # print("beg {} tick {} end {}".format(
             #    tm - pillar_width/2,
@@ -279,10 +276,10 @@ class GraphFrame:
             #    tm + pillar_width/2) )
             # keep track of all objects on the screen
             self.pillar_edges.append(
-                    (tm - pillar_width / 2,  # start X
-                     tm + pillar_width / 2,  # end x
-                     height - (accnt_data[i][1] * scale),  # top Y
-                     accnt_data[i][1]))  # Value
+                (tm - pillar_width / 2,  # start X
+                 tm + pillar_width / 2,  # end x
+                 height - (account_data[i][1] * scale),  # top Y
+                 account_data[i][1]))  # Value
             tm = tm + pillar_space + pillar_width
         for entry in self.pillar_edges:
             pass
@@ -293,11 +290,11 @@ class GraphFrame:
         self.width = event.width
         self.height = event.height
 
-        self.graph_data(self.accnt_data)
+        self.graph_data(self.account_data)
 
     def motion(self, event):
         """This method destroys then repaints the text on the canvas
-        for every cursor movement event if its on the same pillar. The text 
+        for every cursor movement event if it is on the same pillar. The text
         object has a string tag.  I could use the starting x as a tag and
         only delete/create_text object if the tag differs"""
 
@@ -319,7 +316,7 @@ class GraphFrame:
             if self.pop_up:
                 self.canvas.delete(self.pop_up)
             self.pop_up = self.canvas.create_text(
-                    entry[0], entry[2] - 10, text=entry[3], fill='RED')
+                entry[0], entry[2] - 10, text=entry[3], fill='RED')
         else:
             if self.pop_up:
                 # print("We  are clear")
@@ -338,7 +335,7 @@ class MyMenuBar:
         self.master = master  # Tk.root
         self.data_file_name = ""
         self.edit_window_open = {  # use an instrument type to index this dictionary
-            'account': 0, 'ca':0, 'cd': 0, 'loan': 0, 'bond': 0,
+            'account': 0, 'ca': 0, 'cd': 0, 'loan': 0, 'bond': 0,
             'fund': 0, 'transfer': 0, 'setting': 0}
         self.import_account_win_open = False
         self.import_bond_details_win_open = False
@@ -416,86 +413,86 @@ class MyMenuBar:
         my_menu.add_cascade(label="Help", menu=self.help_menu)
         self.help_menu.add_command(label="Overview",
                                    command=partial(
-                                           Help,
-                                           "Overview",
-                                           self.master))
+                                       Help,
+                                       "Overview",
+                                       self.master))
         self.help_menu.add_command(label="Using This Application",
                                    command=partial(
-                                           Help,
-                                           "Usage",
-                                           self.master))
+                                       Help,
+                                       "Usage",
+                                       self.master))
         self.help_menu.add_command(label="File Menu",
                                    command=partial(
-                                           Help,
-                                           "File",
-                                           self.master))
+                                       Help,
+                                       "File",
+                                       self.master))
         self.edit_menu = tk.Menu(self.help_menu)
         self.help_menu.add_cascade(label="Edit Menu", menu=self.edit_menu)
         self.edit_menu.add_command(label="Settings!",
                                    command=partial(
-                                           Help,
-                                           "Editing Settings",
-                                           self.master))
+                                       Help,
+                                       "Editing Settings",
+                                       self.master))
         self.edit_menu.add_command(label="Accounts",
                                    command=partial(
-                                           Help,
-                                           "Editing Accounts",
-                                           self.master))
+                                       Help,
+                                       "Editing Accounts",
+                                       self.master))
         self.edit_menu.add_command(label="Cash Accounts",
                                    command=partial(
-                                           Help,
-                                           "Editing Cash Accounts",
-                                           self.master))
+                                       Help,
+                                       "Editing Cash Accounts",
+                                       self.master))
         self.edit_menu.add_command(label="CDs!",
                                    command=partial(
-                                           Help,
-                                           "Editing The CD List",
-                                           self.master))
+                                       Help,
+                                       "Editing The CD List",
+                                       self.master))
         self.edit_menu.add_command(label="Bonds",
                                    command=partial(
-                                           Help,
-                                           "Editing The Bond List",
-                                           self.master))
+                                       Help,
+                                       "Editing The Bond List",
+                                       self.master))
         self.edit_menu.add_command(label="Funds!",
                                    command=partial(
-                                           Help,
-                                           "Editing Funds",
-                                           self.master))
+                                       Help,
+                                       "Editing Funds",
+                                       self.master))
         self.edit_menu.add_command(label="Loans!",
                                    command=partial(
-                                           Help,
-                                           "Editing Loans",
-                                           self.master))
+                                       Help,
+                                       "Editing Loans",
+                                       self.master))
         self.edit_menu.add_command(label="Transfers!",
                                    command=partial(
-                                           Help,
-                                           "Editing Scheduled Transfers",
-                                           self.master))
+                                       Help,
+                                       "Editing Scheduled Transfers",
+                                       self.master))
         self.help_menu.add_command(label="Imports!",
                                    command=partial(
-                                           Help,
-                                           "Imports",
-                                           self.master))
+                                       Help,
+                                       "Imports",
+                                       self.master))
         self.help_menu.add_command(label="Account Pull Down!",
                                    command=partial(
-                                           Help,
-                                           "Accounts",
-                                           self.master))
+                                       Help,
+                                       "Accounts",
+                                       self.master))
         self.help_menu.add_command(label="Text/Graph!",
                                    command=partial(
-                                           Help,
-                                           "TextGraph",
-                                           self.master))
+                                       Help,
+                                       "TextGraph",
+                                       self.master))
         self.help_menu.add_command(label="Date Range",
                                    command=partial(
-                                           Help,
-                                           "DateRange",
-                                           self.master))
+                                       Help,
+                                       "DateRange",
+                                       self.master))
         self.help_menu.add_command(label="About",
                                    command=partial(
-                                           Help,
-                                           "About",
-                                           self.master))
+                                       Help,
+                                       "About",
+                                       self.master))
 
     def open_database_file(self):
         self.parent.init_storage()
@@ -530,7 +527,7 @@ class MyMenuBar:
                              "This feature is not yet in place")
 
     def dump_db(self):
-        filename = self.parent.fm.dump_db()
+        self.parent.fm.dump_db()
 
     @staticmethod
     def report_interest():
@@ -550,7 +547,7 @@ class MyMenuBar:
                  "type": "date", "content": "standard"},
                 {"heading": "Update Method", "key": "update_method", "width": dfc.FW_MEDSMALL,
                  "type": "combo", "content": ImportMethodsSupported},
-                ]
+            ]
 
             self.edit_window_open['account'] = 1
             AccountEditWin(self.parent, 'Accounts', columns,
@@ -561,7 +558,7 @@ class MyMenuBar:
     def edit_cash_accounts(self):
         if self.edit_window_open['ca'] == 0:
             compound1 = ['monthly', 'quarterly', 'annual', 'semi-annual']
-            accnt_set = self.parent.get_sorted_accounts_list()
+            # account_set = self.parent.get_sorted_accounts_list()
 
             columns = [
                 {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
@@ -585,11 +582,11 @@ class MyMenuBar:
     def edit_cds(self):
         if self.edit_window_open['cd'] == 0:
             compound0 = ['monthly', 'quarterly', 'annual', 'semi-annual', 'once']
-            accnt_set = self.parent.get_sorted_accounts_list()
+            account_set = self.parent.get_sorted_accounts_list()
 
             columns = [
                 {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
-                 "type": "combo", "content": accnt_set},
+                 "type": "combo", "content": account_set},
                 {"heading": "Purchase\n Date", "key": "purchase_date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
                 {"heading": "Cost", "key": "purchase_price", "width": dfc.FW_SMALL,
@@ -613,11 +610,11 @@ class MyMenuBar:
     def edit_loans(self):
         if self.edit_window_open['loan'] == 0:
             compound0 = ['monthly', 'quarterly', 'annual', 'semi-annual', 'once']
-            accnt_set = self.parent.get_sorted_accounts_list()
+            account_set = self.parent.get_sorted_accounts_list()
 
             columns = [
                 {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
-                 "type": "combo", "content": accnt_set},
+                 "type": "combo", "content": account_set},
                 {"heading": "Origination\n Date", "key": "orig_date", "width": dfc.FW_SMALL,
                  "type": "date", "content": "standard"},
                 {"heading": "Balance", "key": "balance", "width": dfc.FW_SMALL,
@@ -638,13 +635,13 @@ class MyMenuBar:
     def edit_bonds(self):
         if self.edit_window_open['bond'] == 0:
             compound1 = ['monthly', 'quarterly', 'annual', 'semi-annual']
-            accnt_set = self.parent.get_sorted_accounts_list()
-            expanded_accnt_set = ['All']
-            expanded_accnt_set.extend(accnt_set)  # All + account set
+            account_set = self.parent.get_sorted_accounts_list()
+            expanded_account_set = ['All']
+            expanded_account_set.extend(account_set)  # All + account set
 
             columns = [
                 {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
-                 "type": "combo", "content": accnt_set},
+                 "type": "combo", "content": account_set},
                 {"heading": "Settlement\nDate", "key": "purchase_date",
                  "width": dfc.FW_SMALL, "type": "date", "content": "standard"},
                 {"heading": "Price", "key": "bond_price", "width": dfc.FW_SMALL,
@@ -667,8 +664,8 @@ class MyMenuBar:
                  "type": "checkbutton", "content": "call"}]
             filters = [
                 {'type': 'combo', 'width': dfc.FW_MEDSMALL, 'label': 'Account Name:',
-                 'set': expanded_accnt_set, 'function': self.account_filter},
-                {'type': 'combo', 'width': dfc.FW_SMALLEST,  'label': 'Bond Status:',
+                 'set': expanded_account_set, 'function': self.account_filter},
+                {'type': 'combo', 'width': dfc.FW_SMALLEST, 'label': 'Bond Status:',
                  'set': ['All', 'active', 'closed', 'matured', 'called'],
                  'function': self.bond_status_filter}]
 
@@ -679,14 +676,14 @@ class MyMenuBar:
 
     def edit_funds(self):
         if self.edit_window_open['fund'] == 0:
-            compound1 = ['monthly', 'quarterly', 'annual', 'semi-annual']
-            accnt_set = self.parent.get_sorted_accounts_list()
-            expanded_accnt_set = ['All']
-            expanded_accnt_set.extend(accnt_set)  # All + account set
+            # compound1 = ['monthly', 'quarterly', 'annual', 'semi-annual']
+            account_set = self.parent.get_sorted_accounts_list()
+            expanded_account_set = ['All']
+            expanded_account_set.extend(account_set)  # All + account set
 
             columns = [
                 {"heading": "Account Name", "key": "account_name", "width": dfc.FW_MED,
-                 "type": "combo", "content": accnt_set},
+                 "type": "combo", "content": account_set},
                 {"heading": "Fund Name", "key": "symbol", "width": dfc.FW_MED,
                  "type": "entry", "content": "text"},
                 {"heading": "Date", "key": "date", "width": dfc.FW_SMALL,
@@ -695,14 +692,14 @@ class MyMenuBar:
                  "type": "entry", "content": "dollars"},
                 {"heading": "Return\nRate", "key": "est_roi", "width": dfc.FW_SMALLEST,
                  "type": "entry", "content": "rate"},
-                #{"heading": "Interest\nDate", "key": "interest_date", "width": dfc.FW_SMALL,
+                # {"heading": "Interest\nDate", "key": "interest_date", "width": dfc.FW_SMALL,
                 # "type": "date", "content": "standard"},
-                #{"heading": "Compound", "key": "frequency", "width": dfc.FW_SMALL,
+                # {"heading": "Compound", "key": "frequency", "width": dfc.FW_SMALL,
                 # "type": "combo", "content": compound1}
-                ]
+            ]
             filters = [
                 {'type': 'combo', 'width': dfc.FW_MEDSMALL, 'label': 'Account Name:',
-                 'set': expanded_accnt_set, 'function': self.account_filter}]
+                 'set': expanded_account_set, 'function': self.account_filter}]
 
             self.edit_window_open['fund'] = 1
             AccountEditWin(self.parent, 'Funds', columns, self.parent.get_from_db('fund'),
@@ -712,42 +709,42 @@ class MyMenuBar:
 
     def edit_transfers(self):
         if self.edit_window_open['transfer'] == 0:
-            accnt_set1 = self.parent.get_sorted_accounts_list(income=True)
-            #accnt_set1.append('income')
-            accnt_set2 = self.parent.get_sorted_accounts_list(expense=True)
-            #accnt_set2.append('expense')
+            account_set1 = self.parent.get_sorted_accounts_list(income=True)
+            # account_set1.append('income')
+            account_set2 = self.parent.get_sorted_accounts_list(expense=True)
+            # account_set2.append('expense')
 
             columns = [
                 {"heading": "From Account", "key": "from_account_name", "width": dfc.FW_MED,
-                 "type": "combo", "content": accnt_set1},
+                 "type": "combo", "content": account_set1},
                 {"heading": "To Account", "key": "to_account_name", "width": dfc.FW_MED,
-                 "type": "combo", "content": accnt_set2},
+                 "type": "combo", "content": account_set2},
                 {"heading": "Date", "key": "frequency", "width": dfc.FW_SMALL,
                  "type": "date", "content": "latest"},
                 {"heading": "Amount", "key": "amount", "width": dfc.FW_SMALL,
                  "type": "entry", "content": "dollars"},
                 {"heading": "Occurrences", "key": "frequency", "width": dfc.FW_MEDSMALL,
                  "type": "date", "content": "regularity"},
-                {"heading": "Inflation", "key":"inflation", "width":dfc.FW_SMALL,
-                "type": "entry", "content":"rate"},
+                {"heading": "Inflation", "key": "inflation", "width": dfc.FW_SMALL,
+                 "type": "entry", "content": "rate"},
                 {"heading": "", "key": "", "width": dfc.FW_TINY,
                  "type": "filler", "content": ""},
                 {"heading": "Notes", "key": "note", "width": dfc.FW_MEDLARGE,
                  "type": "entry", "content": "text"}]
             filters = []
-            expanded_accnt_set1 = ['All']
-            expanded_accnt_set1.extend(accnt_set1)  # All + account set
+            expanded_account_set1 = ['All']
+            expanded_account_set1.extend(account_set1)  # All + account set
             filters.append({'type': 'combo',
                             'width': dfc.FW_MEDSMALL,
                             'label': 'FromAccount:',
-                            'set': expanded_accnt_set1,
+                            'set': expanded_account_set1,
                             'function': self.from_account_filter})
-            expanded_accnt_set2 = ['All']
-            expanded_accnt_set2.extend(accnt_set2)  # All + account set
+            expanded_account_set2 = ['All']
+            expanded_account_set2.extend(account_set2)  # All + account set
             filters.append({'type': 'combo',
                             'width': dfc.FW_MEDSMALL,
                             'label': 'to_account:',
-                            'set': expanded_accnt_set2,
+                            'set': expanded_account_set2,
                             'function': self.to_account_filter})
 
             self.edit_window_open['transfer'] = 1
@@ -770,52 +767,49 @@ class MyMenuBar:
         # Todo - this are needs work. gjg  It needs to be moved into import_support
         # this is the trigger point for account init
 
-        fm = self.parent.get_file_manager()
-
         for account in new_accounts:
             update_method = self.parent.get_account_update_method(account['account_id'])
             if update_method != "Manual":
                 response = tk.messagebox.askquestion(
                     "New Account Initialization",
-                    "You have just created a new account "+
-                    "named \'{}\', ".format(account['account'])+
-                    "account ID: \'{}\'. ".format(account['account_id'])+
-                    "Would you like to initialize it? "+
-                    "(You will need a file to import "+
+                    "You have just created a new account " +
+                    "named \'{}\', ".format(account['account']) +
+                    "account ID: \'{}\'. ".format(account['account_id']) +
+                    "Would you like to initialize it? " +
+                    "(You will need a file to import " +
                     "based on the Import Method you specified.)")
                 if response == "yes":
                     if update_method == "Fidelity Export":
-                        file_content = fm.open_account_import(process_fidelity_account_download,
-                                                              account['account_id'])
+                        file_content = self.parent.fm.open_account_import(process_fidelity_account_download,
+                                                                          account['account_id'])
                         for rec in file_content:
                             print(rec)
                 else:
                     print("He answered No")
 
-
     @staticmethod
-    def account_filter(accnt, rec):
+    def account_filter(account, rec):
         """Filter a bond based on the given account criteria """
 
-        if accnt == 'All' or accnt == rec['account_name']:
+        if account == 'All' or account == rec['account_name']:
             return True
         else:
             return False
 
     @staticmethod
-    def to_account_filter(accnt, rec):
+    def to_account_filter(account, rec):
         """Filter a bond based on the given account criteria """
 
-        if accnt == 'All' or accnt == rec['to_account_name']:
+        if account == 'All' or account == rec['to_account_name']:
             return True
         else:
             return False
 
     @staticmethod
-    def from_account_filter(accnt, rec):
+    def from_account_filter(account, rec):
         """Filter a bond based on the given account criteria """
 
-        if accnt == 'All' or accnt == rec['from_account_name']:
+        if account == 'All' or account == rec['from_account_name']:
             return True
         else:
             return False
@@ -874,41 +868,39 @@ class MyMenuBar:
 
         if rec["cusip"] == "":
             return header + "\"{}\" may not be blank.".format(
-                    self.get_column_heading("cusip", column_desc))
+                self.get_column_heading("cusip", column_desc))
 
         elif rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("account_name", column_desc))
+                self.get_column_heading("account_name", column_desc))
 
         elif rec["bond_price"] < 50 or rec["bond_price"] > 150:
             return header + "\"{}\" is out of range ($50 - $150).".format(
-                    self.get_column_heading("bond_price", column_desc))
+                self.get_column_heading("bond_price", column_desc))
 
         elif rec["quantity"] < 1:
             return header + "\"{}\" must be a minimum of one.".format(
-                    self.get_column_heading("quantity", column_desc))
+                self.get_column_heading("quantity", column_desc))
 
         elif rec["quantity"] < 1:  # must be integer
             return header + "\"{}\" must be a minimum of one.".format(
-                    self.get_column_heading("quantity", column_desc))
+                self.get_column_heading("quantity", column_desc))
 
         elif rec["coupon"] <= 0:
             return header + "\"{}\" must be greater than 0.".format(
-                    self.get_column_heading("coupon", column_desc))
+                self.get_column_heading("coupon", column_desc))
 
         elif rec["fee"] < 0:
             return header + "\"{}\" must have a positive value or zero.".format(
-                    self.get_column_heading("fee", column_desc))
+                self.get_column_heading("fee", column_desc))
 
         elif settlement_date >= maturity_date:
             return header + "\"{}\" must be after \"{}\".".format(
-                self.get_column_heading("maturity_date", column_desc).
-                                        replace("\n", " "),
+                self.get_column_heading("maturity_date", column_desc).replace("\n", " "),
                 self.get_column_heading("purchase_date", column_desc))
         elif rec["frequency"] == "":
             return header + "\"{}\" must be a valid value.".format(
-                self.get_column_heading("frequency", column_desc).
-                                        replace("\n", " "))
+                self.get_column_heading("frequency", column_desc).replace("\n", " "))
 
         elif rec["call_price"] != 0:
             if rec["call_price"] < 50 or rec["call_price"] > 150:
@@ -920,13 +912,13 @@ class MyMenuBar:
             if call_date >= maturity_date:
                 return header + \
                        "\"Call Date\" must be before the \"{}\".".format(
-                            self.get_column_heading("maturity_date", column_desc).
-                                                    replace("\n", " "))
+                           self.get_column_heading("maturity_date", column_desc).
+                           replace("\n", " "))
             if call_date <= settlement_date:
                 return header + \
                        "\"Call Date\" must be after the \"{}\".".format(
-                            self.get_column_heading("purchase_date", column_desc).
-                                                    replace("\n", " "))
+                           self.get_column_heading("purchase_date", column_desc).
+                           replace("\n", " "))
         return ""
 
     def validate_fund_entry(self, rec, column_desc):
@@ -935,19 +927,19 @@ class MyMenuBar:
         header = ""
         if rec["account_name"] == "":
             return header + "\"{}\" must be a valid account name.".format(
-                    self.get_column_heading("account", column_desc))
+                self.get_column_heading("account", column_desc))
 
         elif rec["fund"] == "":
             return header + "\"{}\" must be a valid fund.".format(
-                    self.get_column_heading("fund", column_desc))
+                self.get_column_heading("fund", column_desc))
 
         elif rec["date"] == "":
             return header + "\"{}\" must be a valid date.".format(
-                    self.get_column_heading("date", column_desc))
+                self.get_column_heading("date", column_desc))
 
         elif rec["frequency"] == "":
             return header + "\"{}\" must be a valid value.".format(
-                    self.get_column_heading("frequency", column_desc))
+                self.get_column_heading("frequency", column_desc))
 
         return ""
 
@@ -957,19 +949,19 @@ class MyMenuBar:
         header = ""
         if rec["from_account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("from_account_name", column_desc))
+                self.get_column_heading("from_account_name", column_desc))
 
         elif rec["to_account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("to_account_name", column_desc))
+                self.get_column_heading("to_account_name", column_desc))
 
         elif rec["amount"] == 0.0:
             return header + "\"{}\" can not be zero.".format(
-                    self.get_column_heading("amount", column_desc))
+                self.get_column_heading("amount", column_desc))
 
         elif rec["frequency"] == "":
             return header + "\"{}\" must be a valid selection.".format(
-                    self.get_column_heading("frequency", column_desc))
+                self.get_column_heading("frequency", column_desc))
 
         try:
             # TODO - the rec is updated from the widget before
@@ -981,12 +973,12 @@ class MyMenuBar:
             float(rec["amount"])
         except ValueError:
             return header + "\"{}\" contains an invalid amount.".format(
-                    self.get_column_heading("amount", column_desc))
+                self.get_column_heading("amount", column_desc))
 
         return ""
 
     def validate_account_entry(self, rec, column_desc):
-        """Validate the content of a account record. """
+        """Validate the content of an account record. """
         if rec["account_name"] == "":
             return "Account must have a non-blank Account Name"
 
@@ -1002,7 +994,7 @@ class MyMenuBar:
         """
         if rec["account_number"] == "":
             return header + "\"{}\" may not be left blank.".format(
-                    self.get_column_heading("account_number", column_desc))
+                self.get_column_heading("account_number", column_desc))
 
         elif rec["account_type"] == "":
             return header + "\"{}\" must be a valid entry.".format(
@@ -1011,8 +1003,8 @@ class MyMenuBar:
         elif rec["update_method"] != "Manual" and rec["account_number"] == "":
             return header + \
                    "\"{}\" field may not be left blank when {} is specified." \
-                       .format(self.get_column_heading("account_number", column_desc),
-                               self.get_column_heading("update_method", column_desc))
+                   .format(self.get_column_heading("account_number", column_desc),
+                           self.get_column_heading("update_method", column_desc))
         return ""
 
     def validate_ca_entry(self, rec, column_desc):
@@ -1020,11 +1012,11 @@ class MyMenuBar:
         header = ""
         if rec["account_name"] == "":
             return header + "\"{}\" may not be left blank.".format(
-                    self.get_column_heading("account_name", column_desc))
+                self.get_column_heading("account_name", column_desc))
 
         elif rec["frequency"] == "":
             return header + "\"{}\" must be a valid entry.".format(
-                    self.get_column_heading("frequency", column_desc))
+                self.get_column_heading("frequency", column_desc))
 
         return ""
 
@@ -1037,38 +1029,38 @@ class MyMenuBar:
 
         if rec["cusip"] == "":
             return header + "\"{}\" may not be blank.".format(
-                    self.get_column_heading("cusip", column_desc))
+                self.get_column_heading("cusip", column_desc))
 
         elif rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("account_name", column_desc))
+                self.get_column_heading("account_name", column_desc))
 
         elif rec["purchase_price"] <= 0:
             return header + "\"{}\" may not be zero.".format(
-                    self.get_column_heading("purchase_price", column_desc))
+                self.get_column_heading("purchase_price", column_desc))
 
         elif rec["quantity"] < 1:
             return header + "\"{}\" must be a minimum of one.".format(
-                    self.get_column_heading("quantity", column_desc))
+                self.get_column_heading("quantity", column_desc))
 
         elif rec["quantity"] < 1:  # must be integer
             # todo - this is a dup of the previous check
             return header + "\"{}\" must be a minimum of one.".format(
-                    self.get_column_heading("quantity", column_desc))
+                self.get_column_heading("quantity", column_desc))
 
         elif rec["rate"] <= 0:
             return header + "\"{}\" must be greater than 0.".format(
-                    self.get_column_heading("rate", column_desc))
+                self.get_column_heading("rate", column_desc))
 
         elif settlement_date >= maturity_date:
             return header + "\"{}\" must be after \"{}\".".format(
                 self.get_column_heading("maturity_date", column_desc).
-                                        replace("\n", " "),
+                replace("\n", " "),
                 self.get_column_heading("purchase_date", column_desc).
-                                        replace("\n", " "))
+                replace("\n", " "))
         elif rec["frequency"] == "":
             return header + "\"{}\" must be a valid value.".format(
-                    self.get_column_heading("frequency", column_desc))
+                self.get_column_heading("frequency", column_desc))
         return ""
 
     def validate_loan_entry(self, rec, column_desc):
@@ -1081,21 +1073,21 @@ class MyMenuBar:
 
         if rec["account_name"] == "":
             return header + "\"{}\" must be a valid account.".format(
-                    self.get_column_heading("account_name", column_desc))
+                self.get_column_heading("account_name", column_desc))
 
         elif rec["balance"] <= 0:
             return header + "\"{}\" must <be greater than zero.".format(
-                    self.get_column_heading("balance", column_desc))
+                self.get_column_heading("balance", column_desc))
 
         elif orig_date >= payoff_date:
             return header + "\"{}\" must be after \"{}\".".format(
                 self.get_column_heading("payoff_date", column_desc).
-                                        replace("\n", " "),
+                replace("\n", " "),
                 self.get_column_heading("orig_date", column_desc).
-                                        replace("\n", " "))
+                replace("\n", " "))
         elif rec["frequency"] == "":
             return header + "\"{}\" must be a valid value.".format(
-                    self.get_column_heading("frequency", column_desc))
+                self.get_column_heading("frequency", column_desc))
         return ""
 
     def import_accounts(self):
@@ -1106,11 +1098,11 @@ class MyMenuBar:
                 ImportAccountsWin(self, accounts)
             else:
                 messagebox.showerror("Import Accounts",
-                                    "You must first assign an import method "+
-                                    "to at leaset one account.")
+                                     "You must first assign an import method " +
+                                     "to at least one account.")
 
     def ImportAccountsWin_return(self):
-        """This funtion is required by the ImportAccountsWin class.
+        """This function is required by the ImportAccountsWin class.
 
         It is called when the ImportAccountsWin window is closed
         """
@@ -1120,7 +1112,7 @@ class MyMenuBar:
         if self.import_bond_details_win_open is False:
             self.import_bond_details_win_open = True
             accounts = self.parent.get_accounts_with_bond_import_methods()
-            ImportBondDetailsWin(self,accounts)
+            ImportBondDetailsWin(self, accounts)
 
     def ImportBondDetailsWin_return(self):
         """This function is required by the ImportBondDetailsWin class.
@@ -1159,6 +1151,7 @@ class StatusBar:
         self.datafile = filename
         self.status.configure(text=StatusBar.LABEL + self.datafile)
 
+
 class CfGui:
     """This is the main class for the GUI.  
 
@@ -1176,7 +1169,7 @@ class CfGui:
         self.root = tk.Tk()
         self.root.title("Cash Flow Analysis")
         cf_styles.set_styles()
-        #self.settings_mgr = SettingsManager()
+        # self.settings_mgr = SettingsManager()
         self.fm = file_manager
         self.fm.set_gui(self)
         self.mb = MyMenuBar(self.root, self)
@@ -1184,7 +1177,7 @@ class CfGui:
                                   data_source.start_date,
                                   data_source.end_date, mode="Graph")
         self.gf = GraphFrame(self, self.root, w=800, h=400)
-        self.tf = None         # we'll create the text frame later
+        self.tf = None  # we'll create the text frame later
         self.sf = StatusBar(self.root)
 
     def run(self):
@@ -1210,21 +1203,21 @@ class CfGui:
         self.root.mainloop()
 
     def update_graph(self):
-        accnt_data = self.ds.get_account_data(
-                self.bf.get_active_account_id(),
-                self.bf.get_granularity(),
-                self.bf.start_date,
-                self.bf.end_date)
-        if accnt_data:
-            self.gf.graph_data(accnt_data)
+        account_data = self.ds.get_account_data(
+            self.bf.get_active_account_id(),
+            self.bf.get_granularity(),
+            self.bf.start_date,
+            self.bf.end_date)
+        if account_data:
+            self.gf.graph_data(account_data)
         # self.sf   # TODO - work on updating the status bar
 
     def update_text(self):
         # A new data file may have no accounts
         active_account_id = self.bf.get_active_account_id()
         if active_account_id != "":
-            accnt_data = self.ds.get_register(active_account_id)
-            self.tf.show_text(accnt_data)
+            account_data = self.ds.get_register(active_account_id)
+            self.tf.show_text(account_data)
 
     def get_granularity(self):
         return self.bf.get_granularity()
@@ -1255,8 +1248,8 @@ class CfGui:
     def get_menu_bar(self):
         return self.mb
 
-    def format_date(self, date):
-        return self.ds.format_date(date)
+    def format_date(self, dt):
+        return self.ds.format_date(dt)
 
     def get_from_db(self, table, column=None, value=None):
         return self.ds.get_from_db(table, column, value)
@@ -1264,41 +1257,17 @@ class CfGui:
     def get_real_accounts(self, table):
         return self.ds.get_real_accounts(table)
 
-    def get_accounts_OBFISCATED(self):
-        return self.ds.get_accounts()
-
     def get_account_rec(self, account):
         return self.ds.get_account_rec(account)
 
-    def get_cash_accounts_OBFISCATED(self):
-        return self.ds.get_cash_accounts()
-
-    def get_cds_OBFISCATED(self):
-        return self.ds.get_cds()
-
-    def get_loans_OBFISCATED(self):
-        return self.ds.get_loans()
-
-    def get_bonds_OBFISCATED(self):
-        return self.ds.get_bonds()
-
     def get_bond_cash_flow(self, bond_entry_from_source):
         return self.ds.bond_cash_flow(bond_entry_from_source)
-
-    def get_funds_OBFISCATED(self):
-        return self.ds.get_funds()
-
-    def get_transfers_OBFISCATED(self):
-        return self.ds.get_transfers()
 
     def get_sorted_accounts_list(self, expense=False, income=False):
         return self.ds.get_sorted_accounts_list(expense, income)
 
     def get_new_rec(self, instrument_type):
         return self.fm.get_new_rec(instrument_type)
-
-    #def set_settings(self, settings):
-    #    self.settings_mgr.set_settings(settings)
 
     def set_setting(self, setting, value):
         self.ds.set_setting(setting, value)
@@ -1325,10 +1294,10 @@ class CfGui:
         if len(setting) == 0:
             return ""
         else:
-            if column == None:
-                return setting[0]             # return a dictionary
+            if column:
+                return setting[0][column]  # return a scalar
             else:
-                return setting[0][column]     # return a scalar
+                return setting[0]  # return a dictionary
 
     def init_ds_storage(self):
         self.ds.init_storage()
@@ -1397,5 +1366,5 @@ class CfGui:
     def get_account_update_method(self, acc_id):
         return self.ds._update_method(acc_id)
 
-    def update_account(self,account_id, account_details): # todo - maybe this goes away
+    def update_account(self, account_id, account_details):  # todo - maybe this goes away
         self.ds.update_account(account_id, account_details)

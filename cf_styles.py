@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to initialize ttk styles used.
@@ -15,8 +13,8 @@ import data_file_constants as dfc
 
 DELETE_COLOR = 'firebrick1'
 
-def set_styles():
 
+def set_styles():
     s = ttk.Style()
 
     ##############################
@@ -29,7 +27,7 @@ def set_styles():
                 # justify='right',  # I get left justified labels
                 # anchor=tk.W,      #     without these 2 options
                 padding=(2, 2))
-    s.configure('ThinLeft.TLabel',padding=(1, 1))
+    s.configure('ThinLeft.TLabel', padding=(1, 1))
     s.configure('Padded.TLabel', padding=(12, 0, 8))
     s.configure('NoPad.TLabel', padding=(0, 0, 0))
     s.configure('LimitedPad.TLabel', padding=(6, 0, 3))
@@ -90,7 +88,7 @@ def set_styles():
 
     # print(s.layout('TCombobox'))
     # print(s.element_options('Combobox.field'))
-    # print(s.element_options('Combobox.downarrow'))
+    # print(s.element_options('Combobox.down_arrow'))
     # print(s.element_options('Combobox.padding'))
     # print(s.element_options('Combobox.textarea'))
     # print(s.layout('TLabel'))

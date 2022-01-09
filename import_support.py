@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to import data from other sources. (Notably brokerage houses and banks)
@@ -12,13 +10,14 @@
 import csv
 import re
 from datetime import date
-import logging
-import tkinter as tk
-import tkinter.ttk as ttk
+# import logging
+# import tkinter as tk
+# import tkinter.ttk as ttk
 from tkinter import messagebox
 from datetime import datetime
 import data_file_constants as dfc
-import utils as local_util
+
+# import utils as local_util
 
 #########################################################
 # Any method of importing Account Information must be
@@ -28,6 +27,7 @@ import utils as local_util
 ImportMethodsSupported = ["Manual", "Fidelity Download", "Kearny Download",
                           "Cap1 Download"]
 
+
 def process_fidelity_account_download(file_handle, account_id):
     """ Process an exported Fidelity File
 
@@ -35,8 +35,8 @@ def process_fidelity_account_download(file_handle, account_id):
     ----------------
     We are looking for a specific portfolio file - use the following procedure
     to obtain the file:
-       At the Fidelity Web site landing page,
-         Click on the All Accounts block (contains the portfolio total)
+       At the Fidelity Website landing page,
+         Click on the "All Accounts" block (contains the portfolio total)
          Click on Positions tab
          Click on the Download button
        The correct file will contain all the expected keys listed below.
@@ -53,11 +53,12 @@ def process_fidelity_account_download(file_handle, account_id):
         messagebox.showerror("Import Warning",
                              "Unknown File Format")
 
+
 def is_file_fidelity_portfolio_file(csv_reader):
     """Determine if the given file is a Fidelity Portfolio download.
     If it is, it will have a specific set of keys
 
-    Retun True or False
+    Return True or False
     """
     expected_keys = [
         "Account Name/Number",
@@ -81,6 +82,7 @@ def is_file_fidelity_portfolio_file(csv_reader):
             return False
     return True
 
+
 def process_fidelity_portfolio_file(reader, account_id):
     """Process a Fidelity Portfolio file.
 
@@ -94,7 +96,7 @@ def process_fidelity_portfolio_file(reader, account_id):
             instrument_type = classify_instrument(entry)
             if instrument_type == 'bond':
                 rec = process_fidelity_bond_rec_in_portfolio(entry)
-                #append rec to bond ;ist
+                # append rec to bond ;ist
                 print("Bond : {}".format(rec))
             elif instrument_type == 'fund':
                 rec = process_fidelity_fund_rec_in_portfolio(entry)
@@ -103,13 +105,15 @@ def process_fidelity_portfolio_file(reader, account_id):
             elif instrument_type == 'ca':
                 rec = process_fidelity_ca_rec_in_portfolio(entry)
                 # append rec to list
-                print("cs : {}".format(rec))
+                print("ca : {}".format(rec))
             else:
                 print(entry)
+                rec = None
                 messagebox.showerror("Import Warning",
                                      "Unknown Record in Import File")
-                print(rec)
+            print(rec)
     return
+
 
 def process_fidelity_bond_rec_in_portfolio(bond):
     """
@@ -144,10 +148,10 @@ def process_fidelity_bond_rec_in_portfolio(bond):
         elif key_set['fid_key'] == 'Description':
             # name, coupon, maturity date
             match_obj = re.match("(.*) ([0-9]{1,2}.[0-9]*)% ([0-9]{2})/([0-9]{2})/([0-9]{4})",
-                                  bond[key_set['fid_key']])
-            rec[key_set['local_key']] = match_obj.group(1)   # cleaned up description
+                                 bond[key_set['fid_key']])
+            rec[key_set['local_key']] = match_obj.group(1)  # cleaned up description
             rec['coupon'] = match_obj.group(2)
-            rec['maturity_date'] = match_obj.group(5) + "-" + match_obj.group(4) + "-" +match_obj.group(3)
+            rec['maturity_date'] = match_obj.group(5) + "-" + match_obj.group(4) + "-" + match_obj.group(3)
             """
             # todo - remove the following 
             print(match_obj.group(3))   # month
@@ -160,10 +164,16 @@ def process_fidelity_bond_rec_in_portfolio(bond):
             """
     return rec
 
+
 def process_fidelity_fund_rec_in_portfolio(entry):
-    pass
+    """todo To be filled in"""
+    return dict(type=None)
+
+
 def process_fidelity_ca_rec_in_portfolio(entry):
-    pass
+    """todo To be filled in"""
+    return dict(type=None)
+
 
 def process_kearny_account_download(file_handle, account_id):
     """ Procedure for downloading from kearny.
@@ -194,7 +204,8 @@ def process_kearny_account_download(file_handle, account_id):
 
     except KeyError:
         messagebox.showerror("Account Error", "Incorrect File Format")
-        self.cf_gui.log(logging.ERROR, "Account Error, Incorrect File Format")
+        # todo make logging a static class
+        # self.cf_gui.log(logging.ERROR, "Account Error, Incorrect File Format")
 
     if len(account_details) == 0:
         messagebox.showerror("Import Warning",
@@ -231,7 +242,8 @@ def process_cap1_account_download(file_handle, account_id):
 
     except KeyError:
         messagebox.showerror("Import Error", "Incorrect File Format")
-        self.cf_gui.log(logging.ERROR, "Import Error, Incorrect File Format")
+        # todo - make logging a statis class
+        # self.cf_gui.log(logging.ERROR, "Import Error, Incorrect File Format")
 
     if len(account_details) == 0:
         messagebox.showerror("Import Warning",
@@ -265,8 +277,9 @@ def classify_instrument(instrument):
     else:
         messagebox.showerror("Import Error",
                              "Unclassifiable symbol: {}".format(symbol))
-        self.cf_gui.log(logging.ERROR,
-                        "Import Error: Unclassifiable symbol: {}".format(symbol))
+        # todo - make logging a static class
+        # self.cf_gui.log(logging.ERROR,
+        #                 "Import Error: Unclassifiable symbol: {}".format(symbol))
         return "unknown"
 
 
@@ -362,8 +375,8 @@ class ImportFidelityBondList:
                                 key_set['local_key'] == 'next_call_date ':
                             # convert month/day/year to a date object
                             d = datetime.strptime(
-                                    rec[key_set['local_key']],
-                                    ImportFidelityBondList.FID_FORMAT)
+                                rec[key_set['local_key']],
+                                ImportFidelityBondList.FID_FORMAT)
 
                             # convert the date to the normalized format
                             rec[key_set['local_key']] = d.strftime(dfc.DATE_FORMAT)
@@ -390,8 +403,8 @@ class ImportFidelityBondList:
                                 rec_is_valid = False
                     else:
                         raise ValueError(
-                                "Expected key not found in imported rec: {}".format(
-                                        key_set['fid_key']))
+                            "Expected key not found in imported rec: {}".format(
+                                key_set['fid_key']))
                 if rec_is_valid:
                     self.records.append(rec)
             else:

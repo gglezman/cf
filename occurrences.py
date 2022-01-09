@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to edit account data. Occurrences are used for compounding, transfers, etc.
@@ -29,7 +27,7 @@ class EndDate:
             - EndDate.COUNT
             - EndDate.NONE
 
-        date (str, optional): This field is required if type is EndDate.END_ON
+        str_date (str, optional): This field is required if type is EndDate.END_ON
             Format of date is dfc.DATE_FORMAT.
 
         count (int, optional): This field is required if type is EndDate.COUNT
@@ -41,12 +39,12 @@ class EndDate:
     END_ON = 'end_on'
     COUNT = 'count'
 
-    def __init__(self, ed_type, date=None, count=1, last_date=None):
+    def __init__(self, ed_type, str_date=None, count=1, last_date=None):
         if ed_type == EndDate.NONE:
             self._date = {'type': EndDate.NONE, 'date': last_date, 'None': True}
         elif ed_type == EndDate.END_ON:
             self._date = {'type': EndDate.END_ON,
-                          'date': datetime.strptime(date, dfc.DATE_FORMAT)}
+                          'date': datetime.strptime(str_date, dfc.DATE_FORMAT)}
         elif ed_type == EndDate.COUNT:
             self._date = {'type': EndDate.COUNT, 'occurrences': count}
         else:
@@ -141,7 +139,7 @@ class Occurrences:
         self.end_date = None  # EndDate object
 
         #  parse the string
-        sd, ed, self.regularity, *xtras = occurrence_spec.split(';')
+        sd, ed, self.regularity, *extras = occurrence_spec.split(';')
 
         ##########################
         # validate the arguments
@@ -172,11 +170,11 @@ class Occurrences:
         # Act on the 'regularity' component
         #######################################
         if self.regularity == 'weekly':
-            self.weekly_interval = int(xtras[0])  # num of weeks between dates
+            self.weekly_interval = int(extras[0])  # num of weeks between dates
         elif self.regularity == 'twice-a-month':
-            self.second_day = int(xtras[0])
+            self.second_day = int(extras[0])
         elif self.regularity == 'monthly':
-            self.monthly_interval = int(xtras[0])
+            self.monthly_interval = int(extras[0])
 
     def get_dates(self):
         """Get a list of dates per the given occurrence specification.
@@ -252,7 +250,7 @@ class Occurrences:
 
         dates = self.get_dates()
         s = ['-'] * n  # generate a list of n dashes
-        for i, date in enumerate(dates):
+        for i, day in enumerate(dates):
             if len(dates) > i and len(s) > i:
                 s[i] = dates[i].strftime(dfc.SHORT_DATE_FORMAT)
         return s
@@ -267,19 +265,19 @@ class Occurrences:
             last_date (datetime)
             dates (list(datetime))
         """
-        date = start_date
+        day = start_date
         if end_date.has_count():
             for i in range(end_date.count()):
-                if date <= last_date:
-                    dates.append(date)
-                    date = self.get_next_date(start_date, interval_in_months * (i + 1))
+                if day <= last_date:
+                    dates.append(day)
+                    day = self.get_next_date(start_date, interval_in_months * (i + 1))
                 else:
                     break
         else:
             for i in itertools.count():
-                if date <= end_date.date() and date <= last_date:
-                    dates.append(date)
-                    date = self.get_next_date(start_date, interval_in_months * (i + 1))
+                if day <= end_date.date() and day <= last_date:
+                    dates.append(day)
+                    day = self.get_next_date(start_date, interval_in_months * (i + 1))
                 else:
                     break
 
@@ -293,21 +291,21 @@ class Occurrences:
             last_date (datetime)
             dates (list(datetime))
         """
-        date = start_date
+        day = start_date
         if end_date.has_count():
             for i in range(end_date.count()):
-                if date <= last_date:
-                    dates.append(date)
-                    date = self.get_next_date_by_weeks(start_date,
-                                                       interval_in_weeks * (i + 1))
+                if day <= last_date:
+                    dates.append(day)
+                    day = self.get_next_date_by_weeks(start_date,
+                                                      interval_in_weeks * (i + 1))
                 else:
                     break
         else:
             for i in itertools.count():
-                if date <= end_date.date() and date <= last_date:
-                    dates.append(date)
-                    date = self.get_next_date_by_weeks(start_date,
-                                                       interval_in_weeks * (i + 1))
+                if day <= end_date.date() and day <= last_date:
+                    dates.append(day)
+                    day = self.get_next_date_by_weeks(start_date,
+                                                      interval_in_weeks * (i + 1))
                 else:
                     break
 
@@ -369,16 +367,16 @@ class Occurrences:
         return best_date
 
     @staticmethod
-    def add_months(date, months):
+    def add_months(dt, months):
         """Pulled this from the internet."""
 
-        if type(date) != datetime:
+        if type(dt) != datetime:
             raise TypeError("date must be a datetime object")
 
-        month = date.month - 1 + months
-        year = date.year + month // 12
+        month = dt.month - 1 + months
+        year = dt.year + month // 12
         month = month % 12 + 1
-        day = min(date.day, monthrange(year, month)[1])
+        day = min(dt.day, monthrange(year, month)[1])
         return datetime(year, month, day)
 
     def get_start_date(self):
@@ -394,7 +392,7 @@ class Occurrences:
             # make end_date same as start_date
             self.end_date = EndDate(
                     'end_on',
-                    date=self.start_date.strftime(dfc.DATE_FORMAT))
+                    str_date=self.start_date.strftime(dfc.DATE_FORMAT))
 
     def get_end_date(self):
         """
@@ -402,15 +400,15 @@ class Occurrences:
         """
         return self.end_date
 
-    def set_end_date(self, type, date=util.today_in_text()):
-        if type == EndDate.NONE:
+    def set_end_date(self, end_type, day=util.today_in_text()):
+        if end_type == EndDate.NONE:
             self.end_date = EndDate('none', last_date=self.last_date)
-        elif type == EndDate.END_ON:
-            self.end_date = EndDate('end_on', date=date)
-        elif type == EndDate.COUNT:
+        elif end_type == EndDate.END_ON:
+            self.end_date = EndDate('end_on', str_date=day)
+        elif end_type == EndDate.COUNT:
             self.end_date = EndDate('count', count=1)
         else:
-            raise TypeError("Unknown type: {}".format(type))
+            raise TypeError("Unknown type: {}".format(end_type))
 
     def get_regularity(self):
         """return the date portion of the start_date datetime"""

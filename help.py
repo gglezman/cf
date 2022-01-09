@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains help text and support for the Cash Flow application
 
@@ -18,8 +16,8 @@ help_text = {
 This application is intended predict future cash flows based on \
 the current value of cash accounts, funds, loans, CDs and Bonds.\n\n\
 The cash flow results are viewable in either\n\
- - Text Format or\n\
- - Graph Format\n\n\
+   - Text Format or\n\
+   - Graph Format\n\n\
 Cash flows are presented from the current date forward for a provisionable \
 number of months (see Settings/Tracking Months), to the end date. \
 Past cash flows are not tracked, only forward cash flows.\n\n\
@@ -28,12 +26,12 @@ cash flow will be presented, in text mode, from the account opening date through
 the end date. However, graph mode is restricted to begin at the current date.\
 \n\n\
 Note: Past bond, loan and CD information is held for historical purposes and can be viewed from the Edit Menu",
-    "Usage":
+"Usage":
 "Using The Cash Flow Application\n\n"
 "Create a Data File\n\n\
 The first step in using this application is to create a data file to store\n\
 you data. A data file is created using the File/New Data File selection.\n\
-Subseqently, you will open this data file using the File/Open Data File \n\
+Subsequently, you will open this data file using the File/Open Data File \n\
 selection each time you want to use the application.\n\n\
 Create an Account\n\n\
 Next you need to create at least one account. Accounts are created using the\n\
@@ -81,8 +79,8 @@ Graph Type:       xxx\n\n",
 In this window you add or edit account information. An account is something\n\
 you open with a bank, a brokerage firm or on-line. The account may be\n\
 simply a checking or savings account or it may be a brokerage account.\n\
-If its a brokerage account it may contain many additionaal finacial instruments\n\
-such as stock bonds and mutual funds. They will be entered elswehere.\n\n\
+If its a brokerage account it may contain many additional financial instruments\n\
+such as stock bonds and mutual funds. They will be entered elsewhere.\n\n\
 This window is used to enter the top level account information only.\n\n\
 Account Name:  The account nickname. In almost all cases, the nickname\n\
                is the used to refer to the account.\n\n\
@@ -96,8 +94,8 @@ Update Method  Account information may be updated via download from the\n\
                pull down menu.\n\n\
 Note: Some Account Types, such as checking and savings, are simple cash\n\
 accounts. These accounts will be automatically placed in the cash accounts list.\n\
-For broakerage accounts you will have to enter the sweep account manually since\n\
-there is additioan information required.\n",
+For brokerage accounts you will have to enter the sweep account manually since\n\
+there is additional information required.\n",
     "Editing Cash Accounts":
 "Editing the Cash Accounts List\n\n\
 Cash accounts hold cash. They can be a bank account, a checking account or\n\
@@ -207,11 +205,12 @@ are provisioned to a large number of months. The amount of data shown on the \
 graph can be reduced via the Date Range button.\n\n\
 The start date can neither precede the current date nor be equal to or follow the end date. The end date must be after the start date and can not exceed the end period defined by the Tracking Months. ",
     "About":
-"\nVersion Information: {} 03/26/19\n\n\
+"\nVersion Information: {} 01/09/22\n\n\
 Author: Gregory Glezman".format(dfc.SW_VERSION)
 }
 
 # todo the version information and date should be pulled from the DB
+
 
 class Help:
     def __init__(self, topic, master=None):

@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains code for the settings window for the
 # Cash Flow Analysis application.
@@ -45,7 +43,7 @@ class SettingsWin:
         # Setting options - Tracking Months
         ############################
         tracking_months = ['1', '3', '6', '9', '12', '18', '24', '30', '36',
-                           '48', '60', '72', '120','240', '360']
+                           '48', '60', '72', '120', '240', '360']
 
         ttk.Label(frame, text="Tracking Months:",
                   style='MediumLeft.TLabel'). \
@@ -67,7 +65,7 @@ class SettingsWin:
         # The default account is specified in the settings.
         # If nothing is specified in settings, use the first entry
         # in the account list.
-        # If the account list is empty (eg new data file) use ""
+        # If the account list is empty (e.g. new data file) use ""
         row += 1
         col = 0
 
@@ -101,7 +99,7 @@ class SettingsWin:
             grid(row=row, column=col, sticky='W')
         col += 1
         self.entries_per_page_combo = ttk.Combobox(frame, width=15,
-                                                 style='Common.TCombobox')
+                                                   style='Common.TCombobox')
         self.entries_per_page_combo.grid(row=row, column=col)
         self.entries_per_page_combo.set(
                 int(self.old_settings['entries_per_page']))

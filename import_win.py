@@ -1,22 +1,20 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to import data from other sources. (Notably brokerage houses and banks)
 # This file contains the classes that puts up the import windows.
 
-import csv
-import re
-from datetime import date
+# import csv
+# import re
+# from datetime import date
+# from datetime import datetime
 import logging
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import messagebox
-from datetime import datetime
 import data_file_constants as dfc
 import utils as local_util
 from import_support import process_fidelity_account_download
@@ -142,22 +140,22 @@ class ImportAccountsWin:
         account = self.accounts[entry_num]
 
         if self.accounts[entry_num]['update_method'] == "Fidelity Export":
-            fm =  self.parent.parent.get_file_manager()
+            fm = self.parent.parent.get_file_manager()
             file_content = fm.open_account_import(process_fidelity_account_download,
                                                   account['account_id'])
-            #self.cf_gui.update_account(account['account_id'], file_content)
+            # self.cf_gui.update_account(account['account_id'], file_content)
 
         elif self.accounts[entry_num]['update_method'] == "Kearny Download":
             account_details = self.parent.parent.get_file_manager(). \
                 open_account_import(
                 process_kearny_account_download, account['account_id'])
-            #self.cf_gui.update_account(account['account_id'], account_details)
+            # self.cf_gui.update_account(account['account_id'], account_details)
 
         elif self.accounts[entry_num]['update_method'] == "Cap1 Download":
             account_details = self.parent.parent.get_file_manager(). \
                 open_account_import(
                 process_cap1_account_download, account['account_id'])
-            #self.cf_gui.update_account(account['account_id'], account_details)
+            # self.cf_gui.update_account(account['account_id'], account_details)
 
         else:
             messagebox.showerror("Import Error",

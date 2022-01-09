@@ -15,6 +15,8 @@ from tkinter.filedialog import askopenfilename
 from tkinter import messagebox
 import logging
 import csv
+from typing import Dict, Union
+
 import utilities as util
 from occurrences import Occurrences
 import data_file_constants as dfc
@@ -41,7 +43,7 @@ class FileManager:
 
     def open_database_file(self):
         filename = askopenfilename(
-                filetypes=(("Database File","*.db"), ("Data File", "*.dat"), ("All Files", "*.*")),
+                filetypes=(("Database File", "*.db"), ("Data File", "*.dat"), ("All Files", "*.*")),
                 title="Open a Data File")
         if filename:
             self.data_filename = filename
@@ -64,10 +66,10 @@ class FileManager:
         return filename
 
     def is_data_file_open(self):
-        if self.db_conn == None:
-            return False
-        else:
+        if self.db_conn:
             return True
+        else:
+            return False
 
     def create_db(self, filename):
         """Create a database file.
@@ -184,7 +186,7 @@ class FileManager:
         self.db_conn.execute("INSERT INTO version_info (base_version) VALUES('2.00')")
 
         self.db_conn.execute("INSERT INTO setting (tracking_months," +
-                             "default_account, entries_per_page, graph_type) "+
+                             "default_account, entries_per_page, graph_type) " +
                              " VALUES('24','','33','bar')")
 
         self.db_conn.commit()
@@ -277,29 +279,21 @@ class FileManager:
         Note - new records do not contain a rec_id. The rc_id is added by and
         its value calculated by the db.
         """
-        acc_new_rec = {'account_name':'','account_number': '',
-                       'opening_date': "", 'account_type':"",
-                       'update_method':"Manual", 'note': ""}
-        ca_new_rec = {'account_rec_id': "", 'account_name':'','balance': 0.0, 'rate': 0.0,
-                      'interest_date': "", 'frequency': "monthly", 'note': ""}
-        bond_new_rec = {'account_rec_id': "", 'account_name':'','bond_price': 0.0, 'quantity': 0,
-                        'coupon': 0.0, 'fee': 0.0, 'purchase_date': "", 'maturity_date': "",
-                        'frequency': "", 'issuer': "", 'cusip': "",
-                        'call_date': "None", 'call_price': 0.0,
-                        'most_recent_price': 0.0, 'moodys_rating': "", 'product_type': "",
-                        'snp_rating': "", 'most_recent_value': 0.0, 'next_call_date': "None",
-                        'est_yield': 0.0}
-        fund_new_rec = {'account_rec_id': "", 'account_name':'','symbol': "", 'date': "", 'balance': 0.0,
-                        'est_roi': 0.0}
-        xfer_new_rec = {'from_account_rec_id': "", 'to_account_rec_id': "",
-                        'from_account_name':'', 'to_account_name':'',
-                        'amount': 0.0, 'frequency': "", 'inflation':0, 'note': ""}
-        loan_new_rec = {'account_rec_id': "", 'account_name':'','balance': 0.0,
-                        'rate': 0.0, 'orig_date': "", 'payoff_date': "",
-                        'frequency': "", 'note': ""}
-        cd_new_rec = {'account_rec_id': "", 'account_name':'','purchase_price': 0.0, 'quantity': 0,
-                      'rate': 0.0, 'purchase_date': "", 'maturity_date': "", 'frequency': "",
-                      'cusip': ""}
+        acc_new_rec: Dict[str, str] = dict(account_name='', account_number='', opening_date="", account_type="",
+                                           update_method="Manual", note="")
+        ca_new_rec: Dict[str, Union[str, float]] = dict(account_rec_id="", account_name='', balance=0.0, rate=0.0,
+                                                        interest_date="", frequency="monthly", note="")
+        bond_new_rec = dict(account_rec_id="", account_name='', bond_price=0.0, quantity=0, coupon=0.0, fee=0.0,
+                            purchase_date="", maturity_date="", frequency="", issuer="", cusip="", call_date="None",
+                            call_price=0.0, most_recent_price=0.0, moodys_rating="", product_type="", snp_rating="",
+                            most_recent_value=0.0, next_call_date="None", est_yield=0.0)
+        fund_new_rec = dict(account_rec_id="", account_name='', symbol="", date="", balance=0.0, est_roi=0.0)
+        xfer_new_rec = dict(from_account_rec_id="", to_account_rec_id="", from_account_name='', to_account_name='',
+                            amount=0.0, frequency="", inflation=0, note="")
+        loan_new_rec = dict(account_rec_id="", account_name='', balance=0.0, rate=0.0, orig_date="", payoff_date="",
+                            frequency="", note="")
+        cd_new_rec = dict(account_rec_id="", account_name='', purchase_price=0.0, quantity=0, rate=0.0,
+                          purchase_date="", maturity_date="", frequency="", cusip="")
 
         if instrument_type == 'account':
             return acc_new_rec.copy()
@@ -320,15 +314,14 @@ class FileManager:
         else:
             raise TypeError("Invalid instrument_type: {}".format(instrument_type))
 
-
     def dump_db(self):
         """ Dump the content of the database to a file.
 
         We'll ask the user for a file name
         """
         filename = asksaveasfilename(
-            filetypes =(("Text File", "*.txt"),("All Files","*.*")),
-            title = "Save the Database",
+            filetypes=(("Text File", "*.txt"), ("All Files", "*.*")),
+            title="Save the Database",
             defaultextension=".txt")
         if filename:
             with open(filename, 'w', newline='') as text_file:
@@ -343,8 +336,8 @@ class FileManager:
 
                 for table in tables:
                     text_file.write("******************\n")
-                    text_file.write ("Table: {}\n".format(table))
-                    text_file.write ("******************\n")
+                    text_file.write("Table: {}\n".format(table))
+                    text_file.write("******************\n")
                     # ######################################################
                     # Get the column names in the table
                     # ######################################################
@@ -358,9 +351,9 @@ class FileManager:
                     # ######################################################
                     cursor = self.db_conn.execute("SELECT * FROM \'{}\';".format(table))
                     for row in cursor:
-                        for i,column_name in enumerate(column_names):
-                            text_file.write ("{:20}: {}\n".format(column_name, row[i]))
-                        text_file.write ("\n")
+                        for i, column_name in enumerate(column_names):
+                            text_file.write("{:20}: {}\n".format(column_name, row[i]))
+                        text_file.write("\n")
 
     #################################################################
     # todo - For the following, I think I can write one function that takes
@@ -373,7 +366,7 @@ class FileManager:
                 filetypes=(("Text File", "*.csv"), ("All Files", "*.*")),
                 title="Open Bond List File")
         if filename:
-            self.logger.log(logging.INFO,"FileManager::{}():".format(util.f_name()))
+            self.logger.log(logging.INFO, "FileManager::{}():".format(util.f_name()))
             with open(filename, 'r', newline='') as file_obj:
                 read_callback(file_obj)
 
@@ -384,8 +377,8 @@ class FileManager:
                 filetypes=(("Text File", "*.csv"), ("All Files", "*.*")),
                 title="Open Account Import File")
         if filename:
-            self.logger.log(logging.INFO,"FileManager::{}():".format(util.f_name()))
+            self.logger.log(logging.INFO, "FileManager::{}():".format(util.f_name()))
             with open(filename, 'r', newline='') as file_obj:
                 # The callback will return an array of imported data
-                #print("Account_ID is {}".format(account_id))
+                # print("Account_ID is {}".format(account_id))
                 return read_callback(file_obj, account_id)

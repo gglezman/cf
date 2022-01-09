@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # cf - cash flows
 #
@@ -26,7 +24,7 @@
 import logging
 from datetime import datetime, date, timedelta
 import itertools
-from tkinter import messagebox
+# from tkinter import messagebox
 from calendar import monthrange
 import utilities as util
 from cf_gui import CfGui
@@ -63,8 +61,7 @@ class CfAnalysis:
         """Restart by reading in all the data records and recreating the ledger"""
 
         # tracking_months_count can be changed in Setting menu
-        self.end_date = self.get_next_date(self.start_date, tracking_months) - \
-            timedelta(days=1)
+        self.end_date = self.get_next_date(self.start_date, tracking_months) - timedelta(days=1)
 
         ##########################################
         # Establish the balance in each cash account
@@ -97,13 +94,13 @@ class CfAnalysis:
     # Support Code
     ################################################
     @staticmethod
-    def format_date(date):
+    def format_date(dt):
         """ Take a datetime and return a string with just date"""
-        if type(date) is not datetime:
+        if type(dt) is not datetime:
             raise TypeError("{0}(): Input is not a datetime object".
                             format(util.f_name()))
 
-        return "{0}-{1:02}-{2:02}".format(date.year, date.month, date.day)
+        return "{0}-{1:02}-{2:02}".format(dt.year, dt.month, dt.day)
 
     @staticmethod
     def append_register(trans, bal, register):
@@ -143,40 +140,40 @@ class CfAnalysis:
         #    new_trans[1],reg[0][3]))
 
         inserted = False
-        newlist = list()
+        new_list = list()
         bal = float(reg[0][2])  # opening balance
 
         for trans in reg:
-            if new_trans[0] > trans[0]:  # date comparision
-                bal = self.append_register(trans, bal, newlist)
+            if new_trans[0] > trans[0]:  # date comparison
+                bal = self.append_register(trans, bal, new_list)
             else:
                 if not inserted:
                     inserted = True
-                    bal = self.append_register(new_trans, bal, newlist)
-                bal = self.append_register(trans, bal, newlist)
+                    bal = self.append_register(new_trans, bal, new_list)
+                bal = self.append_register(trans, bal, new_list)
         if not inserted:
-            self.append_register(new_trans, bal, newlist)
+            self.append_register(new_trans, bal, new_list)
 
-        return newlist
+        return new_list
 
     @staticmethod
-    def get_bal_on_date(date, reg):
-        """Return the balance of register 'reg' on date 'date'
+    def get_bal_on_date(dt, reg):
+        """Return the balance of register 'reg' on date 'dt'
 
-        Look for a date beyond 'date' then use the balance of the previous
+        Look for a date beyond 'dt' then use the balance of the previous
         register entry. This ensures the correct day's balance if there
         are multiple entries for the day.
         """
-        if type(date) != datetime or type(reg) != list:
-            raise TypeError("{0}(): Input is wrong type".format(util.f_name()) )
+        if type(dt) != datetime or type(reg) != list:
+            raise TypeError("{0}(): Input is wrong type".format(util.f_name()))
 
         # self.logger.log.info("{0}: Date: {1}".format(util.f_name(),
-        #                                         self.format_date(date)))
-        date = date.replace(hour=LATEST_TIME)
+        #                                         self.format_date(dt)))
+        dt = dt.replace(hour=LATEST_TIME)
 
         latest_bal = reg[0][2]  # opening balance
         for trans in reg:
-            if trans[0] > date:
+            if trans[0] > dt:
                 break
             latest_bal = trans[2]
         #  self.logger.log.info("{0}: Bal: {1}".format(util.f_name(), latest_bal))
@@ -239,9 +236,9 @@ class CfAnalysis:
         days_next_month = monthrange(next_year, next_month)[1]
 
         return start_date.replace(
-                year=next_year,
-                month=next_month,
-                day=min(start_date.day, days_next_month))
+            year=next_year,
+            month=next_month,
+            day=min(start_date.day, days_next_month))
 
     @staticmethod
     def get_previous_date(start_date, months):
@@ -259,43 +256,43 @@ class CfAnalysis:
         days_next_month = monthrange(prev_year, prev_month)[1]
 
         return start_date.replace(
-                year=prev_year,
-                month=prev_month,
-                day=min(start_date.day, days_next_month))
+            year=prev_year,
+            month=prev_month,
+            day=min(start_date.day, days_next_month))
 
-    def credit(self, accnt_rec_id, amount, date, comment, credit_type=DEPOSIT_TIME):
-        """Credit account 'accnt_rec_id' on 'date' in the 'amount' with 'comment'.
+    def credit(self, account_rec_id, amount, dt, comment, credit_type=DEPOSIT_TIME):
+        """Credit account 'account_rec_id' on 'dt' in the 'amount' with 'comment'.
         The register balance will be recalculated and updated"""
 
-        self.logger.log(logging.INFO,"{0}() account_rec_id: {1}, amount: {2}, {3})".format(
-            util.f_name(), accnt_rec_id, amount, self.format_date(date)))
+        self.logger.log(logging.INFO, "{0}() account_rec_id: {1}, amount: {2}, {3})".format(
+            util.f_name(), account_rec_id, amount, self.format_date(dt)))
 
-        if type(accnt_rec_id) != int or type(amount) != float or type(date) != datetime:
+        if type(account_rec_id) != int or type(amount) != float or type(dt) != datetime:
             raise TypeError("{0}() : Input type error".format(util.f_name()))
 
-        date = date.replace(hour=credit_type)
-        transaction = (date, amount, 0, comment)
-        self.ledger[accnt_rec_id] = self.trans_to_register(transaction,
-                                                    self.ledger[accnt_rec_id])
+        dt = dt.replace(hour=credit_type)
+        transaction = (dt, amount, 0, comment)
+        self.ledger[account_rec_id] = self.trans_to_register(transaction,
+                                                             self.ledger[account_rec_id])
 
-    def debit(self, accnt_rec_id, amount, date, comment):
-        """Debit account 'accnt_rec_id' on 'date' in the amount 'amount' with 'comment'"""
+    def debit(self, account_rec_id, amount, dt, comment):
+        """Debit account 'account_rec_id' on 'dt' in the amount 'amount' with 'comment'"""
 
         #  self.logger.log.info("{0}() {1}, {2}, {3})".format(
-        #    util.f_name(), accnt, amount, self.format_date(date)))
+        #    util.f_name(), account, amount, self.format_date(dt)))
 
-        if type(accnt_rec_id) != int or type(amount) != float or type(date) != datetime:
+        if type(account_rec_id) != int or type(amount) != float or type(dt) != datetime:
             raise TypeError("{0}() : Input type error".
                             format(util.f_name()))
 
-        date = date.replace(hour=WITHDRAWAL_TIME)
-        transaction = (date, -amount, 0, comment)
-        self.ledger[accnt_rec_id] = self.trans_to_register(transaction,
-                                                    self.ledger[accnt_rec_id])
+        dt = dt.replace(hour=WITHDRAWAL_TIME)
+        transaction = (dt, -amount, 0, comment)
+        self.ledger[account_rec_id] = self.trans_to_register(transaction,
+                                                             self.ledger[account_rec_id])
 
     @staticmethod
     def period_to_months(period):
-        """Convert a string defining the period (eg quarterly) to 
+        """Convert a string defining the period (e.g. quarterly) to
         months in the period"""
 
         if type(period) != str:
@@ -317,8 +314,8 @@ class CfAnalysis:
 
     @staticmethod
     def period_to_rate_factor(period):
-        """Convert a string defining the period (eg quarterly) to a divisor that
-        converts an annual rate to an applicable rate (eg quarterly => 4)"""
+        """Convert a string defining the period (e.g. quarterly) to a divisor that
+        converts an annual rate to an applicable rate (e.g. quarterly => 4)"""
 
         if type(period) != str:
             raise TypeError("{0}() : Input type error".format(util.f_name()))
@@ -347,7 +344,7 @@ class CfAnalysis:
         return bond_cost, accrued_interest
 
     ###########################################################
-    # The following group of functions are to support unit test
+    # The following group of functions support unit test
     ###########################################################
     def reset_ledger(self):
         """This is used to facilitate unit test"""
@@ -356,6 +353,8 @@ class CfAnalysis:
 
     # todo - if I take out internal storage of accounts, CAs, bonds, etc
     #        I need to re-write unit test to work off test database files!
+
+    '''
     def append_accounts(self, entry):
         self.accounts.append(entry)
 
@@ -376,16 +375,16 @@ class CfAnalysis:
 
     def append_transfers(self, entry):
         self.transfers.append(entry)
+    '''
 
+    ###########################################################
+    # end of unit test support code
+    ###########################################################
     def get_register(self, account_rec_id):
         if account_rec_id in self.ledger:
             return self.ledger[account_rec_id]
         else:
             raise ValueError("Unknown account: {0}".format(account_rec_id))
-
-    ###########################################################
-    # end of unit test support code
-    ###########################################################
 
     def account_set_up(self):
         """Establish the opening balance of all cash accounts in the ledger"""
@@ -398,7 +397,7 @@ class CfAnalysis:
             #    entry['account'], entry['opening_date'], entry['balance']))
 
             # The account record holds the opening date for the cash account
-            account_rec = self.get_from_db('account','rec_id', entry['account_rec_id'])[0]
+            account_rec = self.get_from_db('account', 'rec_id', entry['account_rec_id'])[0]
 
             start_date = datetime.strptime(account_rec['opening_date'], dfc.DATE_FORMAT)
             start_date = start_date.replace(hour=INITIAL_DEPOSIT_TIME)
@@ -413,7 +412,7 @@ class CfAnalysis:
 
     def validate_transfer(self, entry):
 
-        #self.logger.log(logging.INFO, "Entering: {}".format(util.f_name()))
+        # self.logger.log(logging.INFO, "Entering: {}".format(util.f_name()))
 
         if entry['to_account_rec_id'] == dfc.INCOME_ACCOUNT_ID:
             raise ValueError("{0}(): Transfer destination can't be 'income'".
@@ -441,10 +440,10 @@ class CfAnalysis:
         transfer_records = self.get_from_db('transfer')
 
         self.logger.log(logging.INFO,
-                    "Entries in Transfers list: {0}".format(len(transfer_records)))
+                        "Entries in Transfers list: {0}".format(len(transfer_records)))
 
         for entry in transfer_records:
-            #print(entry)
+            # print(entry)
             # Fault if invalid
             self.validate_transfer(entry)
             transfer_dates = self.get_dates(entry['frequency'], self.end_date)
@@ -454,27 +453,27 @@ class CfAnalysis:
 
             # Find the earliest date both accounts are open
             if self.ledger[entry['from_account_rec_id']][0][0] > \
-                        self.ledger[entry['to_account_rec_id']][0][0]:
+                    self.ledger[entry['to_account_rec_id']][0][0]:
                 opening_date = self.ledger[entry['from_account_rec_id']][0][0]
             else:
                 opening_date = self.ledger[entry['to_account_rec_id']][0][0]
 
-            #print("Opening Date :{}".format(opening_date))
-            #print(transfer_dates)
-            #print(transfer_amounts)
-            #print()
-            for i,transDate in enumerate(transfer_dates):
+            # print("Opening Date :{}".format(opening_date))
+            # print(transfer_dates)
+            # print(transfer_amounts)
+            # print()
+            for i, transDate in enumerate(transfer_dates):
                 if transDate >= opening_date:
                     self.debit(entry['from_account_rec_id'],
-                       transfer_amounts[i],  # float(entry['amount']),
-                       transDate,
-                       "Transfer to " + str(entry['to_account_name']) +
-                       ", Note: " + entry['note'])
+                               transfer_amounts[i],  # float(entry['amount']),
+                               transDate,
+                               "Transfer to " + str(entry['to_account_name']) +
+                               ", Note: " + entry['note'])
                     self.credit(entry['to_account_rec_id'],
-                        transfer_amounts[i],  # float(entry['amount']),
-                        transDate,
-                        "Transfer from " + str(entry['from_account_name'])
-                        + ", Note: " + entry['note'])
+                                transfer_amounts[i],  # float(entry['amount']),
+                                transDate,
+                                "Transfer from " + str(entry['from_account_name'])
+                                + ", Note: " + entry['note'])
 
         """
             # select an opening date that is the  
@@ -490,7 +489,8 @@ class CfAnalysis:
                 else:
                     opening_date = self.ledger[entry['to_account_rec_id']][0][0]
 
-            for i, transDate in enumerate(transfer_dates):       # todo use an enumeration here to get an index into the list so I can skip old values
+            for i, transDate in enumerate(transfer_dates):       # todo use an enumeration here to get an 
+                                                                  # index into the list so I can skip old values
                 if transDate >= opening_date:
                     if entry['from_account_rec_id'] != dfc.INCOME_ACCOUNT_ID:
                         if transDate >= self.ledger[entry['from_account_rec_id']][0][0]:
@@ -513,7 +513,7 @@ class CfAnalysis:
 
         loan_records = self.get_from_db('loan')
 
-        self.logger.log(logging.INFO,"Entries in Loans list: {0}".format(len(loan_records)))
+        self.logger.log(logging.INFO, "Entries in Loans list: {0}".format(len(loan_records)))
 
         for entry in loan_records:
             # If the Loan origination date is on or after
@@ -522,13 +522,13 @@ class CfAnalysis:
             # Otherwise, just enter a credit on maturity.
 
             opening_date = self.ledger[entry['account_rec_id']][0][0]
-            origination_date = datetime.strptime(entry['orig_date'], "%Y-%m-%d") # Todo - dfc.DATE_FORMAT
+            origination_date = datetime.strptime(entry['orig_date'], "%Y-%m-%d")  # Todo - dfc.DATE_FORMAT
             closing_date = datetime.strptime(entry['payoff_date'], "%Y-%m-%d")
             loan_bal = float(entry['balance'])
 
             if origination_date >= closing_date:
                 raise ValueError(
-                        "Loan closing date must follow origination date")
+                    "Loan closing date must follow origination date")
 
             if opening_date >= closing_date:
                 # Loan is already closed
@@ -540,19 +540,19 @@ class CfAnalysis:
 
             # The loan will be entered with its origination date. The
             # opening balance should account for any interest already paid.
-            # Therefore ignore any interest before the opening date
+            # Therefore, ignore any interest before the opening date
             interest_dates = self.get_periodic_dates(origination_date,
                                                      entry['frequency'],
                                                      closing_date)
             interest_dates.append(closing_date)  # last date not on list
             earlier_date = origination_date
-            for date in interest_dates:
-                if date >= opening_date:
-                    period = date - earlier_date
+            for dt in interest_dates:
+                if dt >= opening_date:
+                    period = dt - earlier_date
                     rate = period.days / 365 * float(entry['rate']) / 100
                     interest = float(loan_bal) * rate
                     loan_bal += interest
-                    earlier_date = date
+                    earlier_date = dt
 
             self.credit(entry['account_rec_id'], loan_bal, closing_date,
                         "Loan repayment: " + entry['note'],
@@ -561,7 +561,7 @@ class CfAnalysis:
     def process_cds(self):
         cd_records = self.get_from_db('cd')
 
-        self.logger.log(logging.INFO,"Entries in CDs list: {0}".format(len(cd_records)))
+        self.logger.log(logging.INFO, "Entries in CDs list: {0}".format(len(cd_records)))
 
         for entry in cd_records:
             # If the CD purchase date is on or after the opening date,
@@ -576,7 +576,7 @@ class CfAnalysis:
 
             if purchase_date >= maturity_date:
                 raise ValueError(
-                        "CD maturity date must follow purchase date")
+                    "CD maturity date must follow purchase date")
             if opening_date >= maturity_date:
                 # pass history
                 continue
@@ -606,13 +606,13 @@ class CfAnalysis:
             earlier_date = earliest_interest_date
             principal = float(entry['purchase_price']) * float(entry['quantity'])
 
-            for date in interest_dates:
-                period = date - earlier_date
+            for dt in interest_dates:
+                period = dt - earlier_date
                 rate = period.days / 365 * float(entry['rate']) / 100
                 interest = principal * rate
-                self.credit(entry['account_rec_id'], interest, date,
+                self.credit(entry['account_rec_id'], interest, dt,
                             "CD Interest, CUSIP: " + entry['cusip'])
-                earlier_date = date
+                earlier_date = dt
 
             self.credit(entry['account_rec_id'], principal, maturity_date,
                         "CD Sale, CUSIP: " + entry['cusip'],
@@ -625,9 +625,9 @@ class CfAnalysis:
         #  calc final payment on call date based on call premium
         #
         bond_records = self.get_from_db('bond')
-        self.logger.log(logging.INFO,"Entries in Bonds list: {0}".format(len(bond_records)))
+        self.logger.log(logging.INFO, "Entries in Bonds list: {0}".format(len(bond_records)))
         for entry in bond_records:
-            #print(entry)
+            # print(entry)
             details = self.bond_cash_flow(entry)
 
             # If the Bond purchase date is on or after the opening date,
@@ -704,13 +704,13 @@ class CfAnalysis:
         # see bond_purchase_price for fix to this
         factor = self.period_to_rate_factor(entry['frequency'])
         last_interest_date = None
-        for date in interest_dates:
-            if date <= call_date:
+        for dt in interest_dates:
+            if dt <= call_date:
                 # don't use any interest after the call_date
                 interest = principal * (float(entry['coupon'] / factor / 100))
-                details.append({'date': date, 'amount': interest,
+                details.append({'date': dt, 'amount': interest,
                                 'note': "Bond Interest"})
-                last_interest_date = date
+                last_interest_date = dt
 
         if call_price != 0.0:
             # A called bond makes a partial coupon payment based
@@ -743,14 +743,14 @@ class CfAnalysis:
         The fund entry is used to set the balance in the fund.
         """
         fund_records = self.get_from_db('fund')
-        self.logger.log(logging.INFO,"Entries in Funds list: {0}".format(len(fund_records)))
+        self.logger.log(logging.INFO, "Entries in Funds list: {0}".format(len(fund_records)))
 
         for entry in fund_records:
             entry_date = datetime.strptime(entry['date'], dfc.DATE_FORMAT)
 
             self.credit(entry['account_rec_id'],
                         entry['balance'],
-                        ca_date,
+                        entry_date,
                         'balance')
             # TODO - how about interest processing ???
 
@@ -758,12 +758,12 @@ class CfAnalysis:
         """Apply interest to all cash accounts"""
         cash_accounts = self.get_from_db('ca')
         self.logger.log(logging.INFO,
-                    "Entries in Cash Accounts: {0}".format(len(cash_accounts)))
+                        "Entries in Cash Accounts: {0}".format(len(cash_accounts)))
         for ca in cash_accounts:
             start_date = datetime.strptime(ca['interest_date'], "%Y-%m-%d")
 
             # push all int payment dates after opening date
-            #account_rec = self.get_account(ca['account_rec_id'])
+            # account_rec = self.get_account(ca['account_rec_id'])
             account_rec = self.get_from_db('account', 'rec_id', ca['account_rec_id'])[0]
             opening_date = datetime.strptime(account_rec['opening_date'], "%Y-%m-%d")
             months_in_period = self.period_to_months(ca['frequency'])
@@ -802,7 +802,7 @@ class CfAnalysis:
         When doing a calculation, first determine the number of whole 
         months - assume each has 30 has. Then figure the number of remaining
         days. Add those together and divide by 360.
-        ::
+
 
             eg    5/1/2018 - 9/28/2018
                      4 months * 30  = 120 days     (5,6,7,8)
@@ -879,11 +879,11 @@ class CfAnalysis:
         year = date_list[0].year
         amount_list = []
 
-        for date in date_list:
-            next_year = date.year
+        for dt in date_list:
+            next_year = dt.year
             if next_year != year:
-                year= next_year
-                amount = amount+amount*inflation/100
+                year = next_year
+                amount = amount + amount * inflation / 100
             amount_list.append(amount)
 
         return amount_list
@@ -893,7 +893,7 @@ class CfAnalysis:
 
         The list contains only the Account Name of the account.
 
-        By default, the expense and income pseudo accounts are removed
+        By default, the expense and income pseudo accounts are removed,
         but they can be included by adding the associated parameter."""
         account_names = list()
 
@@ -909,24 +909,20 @@ class CfAnalysis:
 
         return account_names
 
-    def get_account_name(self, account_rec_id):
-        cursor = self.fm.db_conn.execute(
-            "SELECT account_name FROM account WHERE rec_id=\'{}\'".format(account_rec_id))
-        return cursor.fetchone()[0]
-
     def get_accounts_with_bond_import_methods(self):
         # todo - this looks a little light
         return []
 
-    # todo -this can be upgraded
-    def get_account_update_method(self, acc_id):
-        for account in self.get_from_db('account'):
-            if account['rec_id'] == acc_id:
-                return account['update_method']
-        return None
+    def get_account_update_method(self, rec_id):
+        """Return the account update method give the account_rec_id"""
+        account = self.get_from_db('account', 'rec_id', rec_id)
+        if account:
+            return account[0]['update_method']
+        else:
+            return None
 
     def get_accounts_with_import_methods(self):
-        """Return accounts that have an import method specified
+        """Return a  list of accounts that have an import method specified
 
         :return: A list of account records. Each record includes the
                  account, account_rec_id and the update_method.
@@ -950,15 +946,6 @@ class CfAnalysis:
             id_map[account['rec_id']] = account['account_name']
         return id_map
 
-    # todo - this can be adjusted
-    def get_rec_id_from_acnt_name_OBFISCATED(self, name):
-        for account in self.get_from_db('accounts'):
-            if account['account_name'] == name:
-                return account['rec_id']
-
-        # todo - log the following as an error
-        return ""
-
     def get_account_rec_id(self, account_name):
         """
         Return just the rec_id for the given account_name
@@ -975,10 +962,9 @@ class CfAnalysis:
             query = "SELECT rec_id FROM account WHERE account_name=\'{}\'".format(account_name)
             self.logger.log(logging.INFO, query)
             cursor = self.fm.db_conn.execute(query)
-            #print(cursor.description)
+            # print(cursor.description)
             account_rec_id = cursor.fetchone()[0]
-
-        except Exception as e:
+        except TypeError:
             # the following is used in case there are no accounts yet
             account_rec_id = 0
 
@@ -994,7 +980,7 @@ class CfAnalysis:
         return [i for i in accounts if not (i['rec_id'] < dfc.FIRST_REAL_ACCOUNT)]
 
     def get_from_db(self, table, column=None, value=None):
-        """Return selected rows from the specified table/column match'
+        """Return selected rows from the specified table with optional column match'
 
         If only table is specified, all rows in the table are returned.
 
@@ -1004,9 +990,8 @@ class CfAnalysis:
         Read the column names and data from the DB and construct a python style
         dict to return.
 
-        Return: table_content[] - list of dictionaries
+        Return: table_content[{},{},...] - list of dictionaries
         """
-
 
         """
         >>> import sqlite3
@@ -1022,7 +1007,7 @@ class CfAnalysis:
                         "get_from_db:  table: {}, column: {}, Value: {} ".format(table, column, value))
         table_content = []
         if not self.fm.is_data_file_open():
-            self.logger.log(logging.INFO,"DB not open")
+            self.logger.log(logging.INFO, "DB not open")
             return table_content
 
         column_names = []
@@ -1031,35 +1016,38 @@ class CfAnalysis:
         cursor = self.fm.db_conn.execute("SELECT * FROM PRAGMA_TABLE_INFO(\'{}\');".format(table))
         for row in cursor:
             column_names.append(row[1])  # column 1 has the column name
+        try:
+            if column:
+                query = "SELECT * FROM {} WHERE {} == {}".format(table, column, value)
+            else:
+                query = "SELECT * FROM {}".format(table)
 
-        if column == None:
-            query = "SELECT * FROM {}".format(table)
-        else:
-            query = "SELECT * FROM {} WHERE {} == {}".format(table, column, value)
+            self.logger.log(logging.INFO, query)
+            cursor = self.fm.db_conn.execute(query)
 
-        self.logger.log(logging.INFO,query)
-        cursor = self.fm.db_conn.execute(query)
+            # connect the column names and column data
+            for row in cursor:
+                row_dict = {}
+                for i, col_name in enumerate(column_names):
+                    row_dict[col_name] = row[i]
+                table_content.append(row_dict)
+        except Exception as e:
+            self.logger.log(logging.INFO, "Query failed: {}".format(e))
+            raise RuntimeError("Failed DB Query: {}". format(e))
 
-        # connect the column names and column data
-        for row in cursor:
-            row_dict = {}
-            for i, col_name in enumerate(column_names):
-                row_dict[col_name] = row[i]
-            table_content.append(row_dict)
-
-        #self.logger.log(logging.INFO,"      {}".format(table_content))
+        # self.logger.log(logging.INFO,"      {}".format(table_content))
         return table_content
 
     def set_setting(self, setting, value):
-        update = "UPDATE setting SET \'{}\'=\'{}\'".format(setting,value)
+        update = "UPDATE setting SET \'{}\'=\'{}\'".format(setting, value)
 
         self.logger.log(logging.INFO, update)
 
-        cursor = self.fm.db_conn.execute(update)
+        self.fm.db_conn.execute(update)
         self.fm.db_conn.commit()
 
     def write_to_db(self, table, rec_id, data):
-        """ Write the given mods to the given rec (rec_id)
+        """ Write the given modifications to the given rec (rec_id)
 
         table - table being written
         rec_id - identifies the record in the table
@@ -1086,13 +1074,17 @@ class CfAnalysis:
             update = "Update {} Set ".format(table)
             for mod in data:
                 update += "\'{}\' = \'{}\' ,".format(mod[0], mod[1])
-            update = update[:-1]   # remove the final comma
+            update = update[:-1]  # remove the final comma
             update += "Where rec_id = \'{}\'".format(rec_id)
 
             self.logger.log(logging.INFO, update)
-
-            cursor = self.fm.db_conn.execute(update)
-            self.fm.db_conn.commit()
+            try:
+                self.fm.db_conn.execute(update)
+                self.fm.db_conn.commit()
+            except Exception as e:
+                self.logger.log(logging.INFO, "Update Failed: {}".format(e))
+                self.fm.db_conn.rollback()
+                raise RuntimeError("Update Failed: {}". format(update))
 
     def new_db_rec(self, table, rec):
         """Add a new record to the DB
@@ -1105,7 +1097,7 @@ class CfAnalysis:
             rec['account_rec_id'] = self.get_account_rec_id(rec['account_name'])
         elif table == 'transfer':
             rec['from_account_rec_id'] = self.get_account_rec_id(rec['from_account_name'])
-            rec['to_account_rec_id']   = self.get_account_rec_id(rec['to_account_name'])
+            rec['to_account_rec_id'] = self.get_account_rec_id(rec['to_account_name'])
         else:
             raise RuntimeError("Unknown Table Type : {}".format(table))
 
@@ -1114,80 +1106,79 @@ class CfAnalysis:
         for key in rec.keys():
             insert += key + ","
             values += "\'{}\',".format(rec[key])
-        insert = insert[:-1]       # remove the final comma
+        insert = insert[:-1]  # remove the final comma
         insert += ")"
         values = values[:-1]
         values += ")"
         insert += values
 
         self.logger.log(logging.INFO, insert)
-
-        self.fm.db_conn.execute(insert)
-        self.fm.db_conn.commit()
+        try:
+            self.fm.db_conn.execute(insert)
+            self.fm.db_conn.commit()
+        except Exception as e:
+            self.logger.log(logging.INFO, "Insert Failed: {}".format(e))
+            self.fm.db_conn.rollback()
+            raise RuntimeError("Update Failed: {}".format(insert))
 
     def delete_db_rec(self, table, rec_id):
         delete = "Delete from {} where rec_id = \'{}\'".format(table, rec_id)
         self.logger.log(logging.INFO, delete)
 
-        self.fm.db_conn.execute(delete)
-        self.fm.db_conn.commit()
+        try:
+            self.fm.db_conn.execute(delete)
+            self.fm.db_conn.commit()
+        except Exception as e:
+            self.logger.log(logging.INFO, "Delete Failed: {}".format(e))
+            self.fm.db_conn.rollback()
+            raise RuntimeError("Update Failed: {}".format(delete))
 
     def account_create(self, rec):
         """User has created a new account. Create the corresponding cash account
 
         Notice we don't specify the rec_id because its is auto-increment.
         """
-
-
-        """
-        A note - wrap all the activities in a transaction
-            try:
-                create()
-                create
-                con.commit()
-            except Exception e:
-                con.rollback()
-                Raise runtimeError()
-        
-        """
         # ################################################
         # First add a record to the account table
         # ################################################
-        #del rec['rec_id']
+        try:
+            values = "VALUES ("
+            insert = "Insert into account ("
+            for key in rec.keys():
+                insert += key + ","
+                values += "\'{}\',".format(rec[key])
+            insert = insert[:-1]  # remove the final comma
+            insert += ")"
+            values = values[:-1]
+            values += ")"
+            insert += values
+            self.logger.log(logging.INFO, insert)
 
-        values = "VALUES ("
-        insert = "Insert into account ("
-        for key in rec.keys():
-            insert += key + ","
-            values += "\'{}\',".format(rec[key])
-        insert = insert[:-1]  # remove the final comma
-        insert += ")"
-        values = values[:-1]
-        values += ")"
-        insert += values
-        self.logger.log(logging.INFO, insert)
+            self.fm.db_conn.execute(insert)
+            self.fm.db_conn.commit()
 
-        self.fm.db_conn.execute(insert)
-        self.fm.db_conn.commit()
+            # ################################################
+            # Now add a record to the ca table
+            # ################################################
+            values = "VALUES (\'{}\', \'{}\', \'{}\', \'{}\', \'{}\',\'{}\',\'{}\')".format(
+                self.get_account_rec_id(rec['account_name']),
+                rec['account_name'],
+                0.0,  # opening balance
+                0.0,  # default rate
+                rec['opening_date'],
+                'monthly',
+                "")
+            insert = "Insert into ca "
+            insert += "(account_rec_id,account_name,balance,rate,interest_date,frequency,note) "
+            insert += values
+            self.logger.log(logging.INFO, insert)
 
-        # ################################################
-        # Now add a record to the ca table
-        # ################################################
-        values = "VALUES (\'{}\', \'{}\', \'{}\', \'{}\', \'{}\',\'{}\',\'{}\')".format(
-            self.get_account_rec_id(rec['account_name']),
-            rec['account_name'],
-            0.0,                          # opening balance
-            0.0,                          # default rate
-            rec['opening_date'],
-            'monthly',
-            "")
-        insert = "Insert into ca "
-        insert += "(account_rec_id,account_name,balance,rate,interest_date,frequency,note) "
-        insert += values
-        self.logger.log(logging.INFO, insert)
-
-        self.fm.db_conn.execute(insert)
-        self.fm.db_conn.commit()
+            self.fm.db_conn.execute(insert)
+            self.fm.db_conn.commit()
+        except Exception as e:
+            self.logger.log(logging.INFO, "Account Create Failed: {}".format(e))
+            self.fm.db_conn.rollback()
+            raise RuntimeError("Update Failed: {}".format(insert))
 
     def account_delete(self, account_rec_id):
         """An account has been deleted.
@@ -1198,22 +1189,22 @@ class CfAnalysis:
 
         Note the structure of this function should be used as a model for all db functions
         """
-        rec_list = self.get_from_db('account', column="rec_id", value=account_rec_id )
+        rec_list = self.get_from_db('account', column="rec_id", value=account_rec_id)
         rec = rec_list[0]
 
         try:
             for table in ('fund', 'cd', 'ca', 'bond', 'loan'):
                 delete = "Delete from {} where account_name = \'{}\'".format(table, rec['account_name'])
                 self.logger.log(logging.INFO, delete)
-                cursor = self.fm.db_conn.execute(delete)
+                self.fm.db_conn.execute(delete)
 
             delete = "Delete from transfer where from_account_name = \'{}\'".format(rec['account_name'])
             self.logger.log(logging.INFO, delete)
-            cursor = self.fm.db_conn.execute(delete)
+            self.fm.db_conn.execute(delete)
 
             delete = "Delete from transfer where to_account_name = \'{}\'".format(rec['account_name'])
             self.logger.log(logging.INFO, delete)
-            cursor = self.fm.db_conn.execute(delete)
+            self.fm.db_conn.execute(delete)
 
             settings = self.get_from_db('setting')
             if settings[0]['default_account'] == rec['account_name']:
@@ -1226,13 +1217,12 @@ class CfAnalysis:
                 update = "UPDATE setting SET default_account =\'{}\'".format(default_account)
 
                 self.logger.log(logging.INFO, update)
-                cursor = self.fm.db_conn.execute(update)
+                self.fm.db_conn.execute(update)
 
             self.fm.db_conn.commit()
 
         except Exception as e:
             self.logger.log(logging.INFO, "Account Delete Exception: {}".format(e))
-            messagebox.showerror("Account Deletion Error","{}".format(e) )
             self.fm.db_conn.rollback()
             raise RuntimeError("Account delete failed")
 
@@ -1243,22 +1233,25 @@ class CfAnalysis:
         """
         try:
             for table in ('fund', 'cd', 'ca', 'bond', 'loan'):
-                update = "Update \'{}\' Set account_name = \'{}\' Where account_name = \'{}\'".format(table, new_name, old_name)
+                update = "Update \'{}\' Set account_name = \'{}\' Where account_name = \'{}\'".format(table, new_name,
+                                                                                                      old_name)
                 self.logger.log(logging.INFO, update)
+                self.fm.db_conn.execute(update)
 
-                cursor = self.fm.db_conn.execute(update)
-
-            update = "Update transfer Set from_account_name = \'{}\' where from_account_name = \'{}\'".format(new_name,old_name)
+            update = "Update transfer Set from_account_name = \'{}\' where from_account_name = \'{}\'".format(new_name,
+                                                                                                              old_name)
             self.logger.log(logging.INFO, update)
-            cursor = self.fm.db_conn.execute(update)
+            self.fm.db_conn.execute(update)
 
-            update = "Update transfer Set to_account_name = \'{}\' where to_account_name = \'{}\'".format(new_name,old_name)
+            update = "Update transfer Set to_account_name = \'{}\' where to_account_name = \'{}\'".format(new_name,
+                                                                                                          old_name)
             self.logger.log(logging.INFO, update)
-            cursor = self.fm.db_conn.execute(update)
+            self.fm.db_conn.execute(update)
 
-            update = "Update setting Set default_account = \'{}\' where default_account = \'{}\'".format(new_name,old_name)
+            update = "Update setting Set default_account = \'{}\' where default_account = \'{}\'".format(new_name,
+                                                                                                         old_name)
             self.logger.log(logging.INFO, update)
-            cursor = self.fm.db_conn.execute(update)
+            self.fm.db_conn.execute(update)
 
             self.fm.db_conn.commit()
 
@@ -1337,12 +1330,13 @@ class CfAnalysis:
             account = self.ledger[account_rec_id]
             dates = self.get_periodic_dates(start_date, granularity.lower(),
                                             end_date)
-            for date in dates:
-                bal = self.get_bal_on_date(date, account)
-                # print("Date {} = {}".format(date,bal))
-                data.append((date, bal))
+            for dt in dates:
+                bal = self.get_bal_on_date(dt, account)
+                # print("Date {} = {}".format(dt,bal))
+                data.append((dt, bal))
 
         return data
+
 
 class Logger:
     def __init__(self, default_level):
@@ -1355,16 +1349,16 @@ class Logger:
 
         log_format = "%(levelname)s %(asctime)s - %(message)s"
         logging.basicConfig(filename="./cf_log.txt",
-                        level=default_level,
-                        format=log_format,
-                        filemode='a')
+                            level=default_level,
+                            format=log_format,
+                            filemode='a')
         self.log_connection = logging.getLogger()
 
         self.log_connection.log(logging.INFO, "Logger setup complete")
 
     def log(self, lvl, debug_msg):
         if lvl == logging.CRITICAL:
-            self.log_connection.log(logging.CRITICAL,debug_msg)
+            self.log_connection.log(logging.CRITICAL, debug_msg)
         elif lvl == logging.ERROR:
             self.log_connection.log(logging.ERROR, debug_msg)
         elif lvl == logging.WARNING:
@@ -1375,6 +1369,7 @@ class Logger:
             self.log_connection.log(logging.DEBUG, debug_msg)
         else:
             self.log_connection.log(logging.INFO, debug_msg)
+
 
 def main():
     ##########################################

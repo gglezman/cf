@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2019 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # Useful utilities
 
@@ -32,7 +30,7 @@ import data_file_constants as dfc
 #
 
 def add_label_frame(parent, text, style=None, x_padx=2, x_pady=2):
-    """Add a frame to the window.The frame will get filter combobuttons. """
+    """Add a frame to the window.The frame will get filter combo buttons. """
 
     if style:
         frame = ttk.LabelFrame(parent, style=style, text=text)

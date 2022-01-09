@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2019-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2019-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to an occurrence.  An occurrence represents how often and for how long
@@ -72,9 +70,9 @@ class OccurrenceWin:
         self.start_date_frame = local_util.add_borderless_frame(
             self.selection_frame, i_pad=(2, 4))
         self.regularity_frame = local_util.add_borderless_frame(
-                self.selection_frame, i_pad=(2, 4))
+            self.selection_frame, i_pad=(2, 4))
         self.end_date_frame = local_util.add_borderless_frame(
-                self.selection_frame, i_pad=(2, 4))
+            self.selection_frame, i_pad=(2, 4))
         self.controls_frame = local_util.add_controls_frame(self.win)
         self.button_frame = local_util.add_button_frame(self.controls_frame)
 
@@ -107,12 +105,12 @@ class OccurrenceWin:
                   width=dfc.FW_OCC_FIRST_COL).grid(row=row, column=col)
         col += 1  # datepicker
         self.start_date_butt = ttk.Button(
-                frame,
-                text=occ.get_start_date(),
-                width=dfc.FW_OCC_SECOND_COL,
-                style='Special.Thin.TButton')
+            frame,
+            text=occ.get_start_date(),
+            width=dfc.FW_OCC_SECOND_COL,
+            style='Special.Thin.TButton')
         self.start_date_butt.configure(
-                command=lambda token='start': self.open_datepicker(token))
+            command=lambda token='start': self.open_datepicker(token))
 
         self.start_date_butt.grid(row=row, column=col)
 
@@ -260,7 +258,7 @@ class OccurrenceWin:
                       ).grid(row=row, column=col)
         else:
             raise TypeError("Unsupported regularity: {} ".format(
-                    occ.get_regularity()))
+                occ.get_regularity()))
 
     def add_end_date_widgets(self, frame, occ):
         """Add widgets associated with the end date.
@@ -353,12 +351,12 @@ class OccurrenceWin:
 
                 col += 1  # date picker
                 self.end_date_butt = ttk.Button(
-                        frame,
-                        text=end_date.date().date(),  # end_date.date() is a datetime
-                        width=dfc.FW_OCC_SECOND_COL,
-                        style='Special.Thin.TButton')
+                    frame,
+                    text=end_date.date().date(),  # end_date.date() is a datetime
+                    width=dfc.FW_OCC_SECOND_COL,
+                    style='Special.Thin.TButton')
                 self.end_date_butt.configure(
-                        command=lambda token='end': self.open_datepicker(token))
+                    command=lambda token='end': self.open_datepicker(token))
                 self.end_date_butt.grid(row=row, column=col)
 
             else:
@@ -424,7 +422,7 @@ class OccurrenceWin:
         # add the appropriate widgets based on current_regularity
         self.add_regularity_widgets(self.regularity_frame, self.occ)
 
-        # ensure windows systems make the window big enough
+        # ensure Windows systems make the window big enough
         # for some reason, Windows was shrinking the size of the win
         self.set_win_geometry()
 
@@ -446,7 +444,7 @@ class OccurrenceWin:
 
         text_date = date.strftime(dfc.DATE_FORMAT)
 
-        self.occ.set_end_date(EndDate.END_ON, date=text_date)
+        self.occ.set_end_date(EndDate.END_ON, day=text_date)
 
         self.end_date_butt.configure(text=text_date)
 
@@ -495,11 +493,11 @@ class OccurrenceWin:
 
             # create the datePicker and add it to the list of open datepickers
             self.datepicker_windows[token] = DatePicker(
-                    self,  # caller
-                    token,  # opaque data
-                    date=datetime.strptime(day, "%Y-%m-%d"),
-                    title=title,
-                    parent_win=self.win)
+                self,  # caller
+                token,  # opaque data
+                date=datetime.strptime(day, "%Y-%m-%d"),
+                title=title,
+                parent_win=self.win)
 
     def DatePicker_return(self, date, token):
         # This method is required by the datepicker
@@ -524,7 +522,7 @@ class OccurrenceWin:
         """The user has changed the end date type combobox.
 
         Update the occ end date and repaint the end_date frame.
-        Also, selecting a new end_date may effect the sample dates
+        Also, selecting a new end_date may affect the sample dates
         in the regularity frame.
         """
 
@@ -593,7 +591,7 @@ class OccurrenceWin:
 
         if not date_list_text:
             date_list_text = "There are no events within the current tracking window.\n" + \
-			                "Consider updating the tracking months setting."
+                             "Consider updating the tracking months setting."
 
         # put up a window with the date list
         ScrollableWin("Occurrence List", date_list_text, self.win)

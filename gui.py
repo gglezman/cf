@@ -1,9 +1,7 @@
 #
 # Author: Greg Glezman
 #
-# SCCSID : "%W% %G%
-#
-# Copyright (c) 2018-2021 G.Glezman.  All Rights Reserved.
+# Copyright (c) 2018-2022 G.Glezman.  All Rights Reserved.
 #
 # This file contains classes that are used by the cash flow python script
 # to present a GUI to the cash flow application.
@@ -22,7 +20,7 @@ import utils as local_util
 class TextFrame:
     """The text frame is used to view register transactions as text
     (as opposed to a graphic view of the summary)"""
-
+    # todo - width and h are not used - same issue for graph frame
     def __init__(self, parent, master, w=400, h=300):
         # parent is GUI; master is Tk()
         self.parent = parent
@@ -37,7 +35,7 @@ class TextFrame:
         scroll.config(command=self.text.yview)
         scroll.pack(side=tk.RIGHT, fill='y')
 
-    def show_text(self, accnt_data):
+    def show_text(self, account_data):
         self.text.config(state=tk.NORMAL)  # allow access editing
         self.text.delete('1.0', tk.END)
         header = "{0} {1} {2} {3} {4}\n".format(
@@ -48,9 +46,8 @@ class TextFrame:
                 "Notes".ljust(0))
         self.text.insert(tk.END, header)
 
-        for record in accnt_data:
+        for record in account_data:
             transaction = "{:10} {:12,.2f} {:12,.2f}      {}\n".format(
-            #transaction="{0:10} {1:12.2f} {2:12.2f} {3} {4}\n".format(
                     self.parent.format_date(record[0]),
                     record[1],
                     record[2],
@@ -65,7 +62,7 @@ class TextFrame:
 
 class ButtonFrame:
     """This frame will hold a collection of useful buttons"""
-
+    # todo w/h are not used - same issue for TextFrame
     def __init__(self, parent, master, data_source,
                  start_date, end_date, width=400, height=30, mode="Graph"):
         self.parent = parent  # GUI
@@ -328,7 +325,7 @@ class DateRange:
 
         s_date = "{}-{:02}-{:02}".format(start_date.year,
                                          start_date.month,
-                                         start_date.day),
+                                         start_date.day)
         self.dr_button.append(ttk.Button(frame,
                                          text=s_date,
                                          style='Thin.TButton',
@@ -337,12 +334,12 @@ class DateRange:
         self.dr_button[-1].grid(row=1, column=0)
         e_date = "{}-{:02}-{:02}".format(end_date.year,
                                          end_date.month,
-                                         end_date.day),
+                                         end_date.day)
         self.dr_button.append(ttk.Button(frame,
                                          text=e_date,
                                          style='Thin.TButton',
                                          command=lambda butt_num=1:
-                                             self.date_range_picker(butt_num)))
+                                         self.date_range_picker(butt_num)))
         self.dr_button[-1].grid(row=1, column=1)
 
         ################################################
