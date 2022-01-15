@@ -17,9 +17,6 @@ import platform
 # Some useful constants
 #################################
 # The following software version should be updated with every release
-
-
-# todo - the SW version is now kept in the DB
 SW_VERSION = "2.1"
 
 # Field widths for display widgets

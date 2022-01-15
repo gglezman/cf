@@ -635,7 +635,7 @@ class MyMenuBar:
     def edit_bonds(self):
         if self.edit_window_open['bond'] == 0:
             compound1 = ['monthly', 'quarterly', 'annual', 'semi-annual']
-            account_set = self.parent.get_sorted_accounts_list()
+            account_set = self.parent.get_sorted_accounts_list(account_type="Brokerage")
             expanded_account_set = ['All']
             expanded_account_set.extend(account_set)  # All + account set
 
@@ -1171,7 +1171,7 @@ class CfGui:
         cf_styles.set_styles()
         # self.settings_mgr = SettingsManager()
         self.fm = file_manager
-        self.fm.set_gui(self)
+        # self.fm.set_gui(self)
         self.mb = MyMenuBar(self.root, self)
         self.bf = gui.ButtonFrame(self, self.root, self.ds,
                                   data_source.start_date,
@@ -1263,8 +1263,8 @@ class CfGui:
     def get_bond_cash_flow(self, bond_entry_from_source):
         return self.ds.bond_cash_flow(bond_entry_from_source)
 
-    def get_sorted_accounts_list(self, expense=False, income=False):
-        return self.ds.get_sorted_accounts_list(expense, income)
+    def get_sorted_accounts_list(self, expense=False, income=False, account_type=None):
+        return self.ds.get_sorted_accounts_list(expense, income, account_type)
 
     def get_new_rec(self, instrument_type):
         return self.fm.get_new_rec(instrument_type)

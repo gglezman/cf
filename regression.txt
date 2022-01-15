@@ -539,7 +539,7 @@ Test: Test deleting/renaming an account.
 ACTION
    Create  a new account
        Edit / Accounts / New
-       fill in the details (AccountName: test)
+       fill in all the details (AccountName: test)
            Add
        update
    Create bond in that account
@@ -810,7 +810,7 @@ ACTION
 VERIFY
      Ensure it shows up in the list of bonds
 
-Group 10 Account Edit Filtering
+Group 10 Bond Account Edit Filtering
 
 Test: Filter by account
 ACTION

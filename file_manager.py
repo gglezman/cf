@@ -20,26 +20,22 @@ from typing import Dict, Union
 import utilities as util
 from occurrences import Occurrences
 import data_file_constants as dfc
-from cf_upgrade import data_file_upgrade
-
-DATA_FILE_MAGIC_ID = 't$9nhf5&fju%nh'
+from cf_upgrade import database_upgrade
 
 
 class FileManager:
     """File manager for the cash flow app.
 
-    Manage the database file.  This object owns the db_conn for the open
-    database
+    Manage the database file.  This object owns the db_conn for the open database
     """
     def __init__(self, logger):
         self.logger = logger
         self.data_filename = ""
         self.db_conn = None
-        self.gui = None
+        self.cfa = None
 
-    # todo - once I stop reading settings on open, I can delete selg.gui
-    def set_gui(self, gui):
-        self.gui = gui
+    def set_cfa(self, cfa):
+        self.cfa = cfa
 
     def open_database_file(self):
         filename = askopenfilename(
@@ -49,7 +45,11 @@ class FileManager:
             self.data_filename = filename
             # todo - what id you attempt to open a garbage file
             self.db_conn = sqlite3.connect(filename)
-            # todo - I think this is where I should trigger an upgrade
+            # Upgrade the datanase if necessary
+            self.db_conn = database_upgrade(filename, self.db_conn, self.cfa)
+        else:
+            # todo - what if no filename is specified
+            pass
 
         return filename
 

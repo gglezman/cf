@@ -888,7 +888,7 @@ class CfAnalysis:
 
         return amount_list
 
-    def get_sorted_accounts_list(self, expense=False, income=False):
+    def get_sorted_accounts_list(self, expense=False, income=False, account_type=None):
         """Return a sorted list of account names.
 
         The list contains only the Account Name of the account.
@@ -898,13 +898,17 @@ class CfAnalysis:
         account_names = list()
 
         for record in self.get_from_db('account'):
-            account_names.append(record["account_name"])
+            if account_type:
+                if record['account_type'] == account_type:
+                    account_names.append(record["account_name"])
+            else:
+                account_names.append(record["account_name"])
 
         if account_names:
             account_names.sort()
-            if not expense:
+            if not expense and "expense" in account_names:
                 account_names.remove("expenses")
-            if not income:
+            if not income and "income" in account_names:
                 account_names.remove("income")
 
         return account_names
@@ -1045,6 +1049,20 @@ class CfAnalysis:
 
         self.fm.db_conn.execute(update)
         self.fm.db_conn.commit()
+
+    def set_version(self, db_conn, version, value):
+        """Update the version information on the given db connection.
+
+        Note that this function is used during the upgrade process. During
+        this process, the file_manager does not have the correct db_connection
+        because the db files are being manipulated
+        """
+        update = "UPDATE version_info SET \'{}\'=\'{}\'".format(version, value)
+
+        self.logger.log(logging.INFO, update)
+
+        db_conn.execute(update)
+        db_conn.commit()
 
     def write_to_db(self, table, rec_id, data):
         """ Write the given modifications to the given rec (rec_id)
@@ -1379,9 +1397,11 @@ def main():
 
     fm = FileManager(logger)
 
-    cf = CfAnalysis(fm, logger)
+    cfa = CfAnalysis(fm, logger)
 
-    gui = CfGui(cf, fm, logger)
+    fm.set_cfa(cfa)
+
+    gui = CfGui(cfa, fm, logger)
 
     gui.run()
 
