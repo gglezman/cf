@@ -414,84 +414,84 @@ class MyMenuBar:
         self.help_menu.add_command(label="Overview",
                                    command=partial(
                                        Help,
-                                       "Overview",
+                                       "OVERVIEW",
                                        self.master))
         self.help_menu.add_command(label="Using This Application",
                                    command=partial(
                                        Help,
-                                       "Usage",
+                                       "USING_APP",
                                        self.master))
         self.help_menu.add_command(label="File Menu",
                                    command=partial(
                                        Help,
-                                       "File",
+                                       "FILE_MENU",
                                        self.master))
         self.edit_menu = tk.Menu(self.help_menu)
         self.help_menu.add_cascade(label="Edit Menu", menu=self.edit_menu)
-        self.edit_menu.add_command(label="Settings!",
+        self.edit_menu.add_command(label="Settings",
                                    command=partial(
                                        Help,
-                                       "Editing Settings",
+                                       "EDIT_SETTINGS",
                                        self.master))
         self.edit_menu.add_command(label="Accounts",
                                    command=partial(
                                        Help,
-                                       "Editing Accounts",
+                                       "EDIT_ACCOUNTS",
                                        self.master))
         self.edit_menu.add_command(label="Cash Accounts",
                                    command=partial(
                                        Help,
-                                       "Editing Cash Accounts",
+                                       "EDIT_CASH_ACCOUNTS",
                                        self.master))
         self.edit_menu.add_command(label="CDs!",
                                    command=partial(
                                        Help,
-                                       "Editing The CD List",
+                                       "EDIT_CDS",
                                        self.master))
         self.edit_menu.add_command(label="Bonds",
                                    command=partial(
                                        Help,
-                                       "Editing The Bond List",
+                                       "EDIT_BONDS",
                                        self.master))
         self.edit_menu.add_command(label="Funds!",
                                    command=partial(
                                        Help,
-                                       "Editing Funds",
+                                       "EDIT_FUNDS",
                                        self.master))
         self.edit_menu.add_command(label="Loans!",
                                    command=partial(
                                        Help,
-                                       "Editing Loans",
+                                       "EDIT_LOANS",
                                        self.master))
         self.edit_menu.add_command(label="Transfers!",
                                    command=partial(
                                        Help,
-                                       "Editing Scheduled Transfers",
+                                       "EDIT_TRANSFERS",
                                        self.master))
         self.help_menu.add_command(label="Imports!",
                                    command=partial(
                                        Help,
-                                       "Imports",
+                                       "IMPORT_MENU",
                                        self.master))
         self.help_menu.add_command(label="Account Pull Down!",
                                    command=partial(
                                        Help,
-                                       "Accounts",
+                                       "QA_ACCOUNT_PULL_DOWN",
                                        self.master))
         self.help_menu.add_command(label="Text/Graph!",
                                    command=partial(
                                        Help,
-                                       "TextGraph",
+                                       "QA_TEXT_GRAPH",
                                        self.master))
         self.help_menu.add_command(label="Date Range",
                                    command=partial(
                                        Help,
-                                       "DateRange",
+                                       "QA_DATE_RANGE",
                                        self.master))
         self.help_menu.add_command(label="About",
                                    command=partial(
                                        Help,
-                                       "About",
+                                       "HELP_ABOUT",
                                        self.master))
 
     def open_database_file(self):

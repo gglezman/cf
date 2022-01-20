@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head></head>
+<title></title>
+
+<body>
+  <a NAME="OVERVIEW"/a>
+  <h1>Overview</h1>
+  
+  <h2>Overview of the Cash Flow Application</h2>
+  
+This application is intended predict future cash flows based on
+the current value of cash accounts, funds, loans, CDs and bonds.
+  The cash flow results are viewable in either text or graphical format.
+<p>
+Cash flows are presented from the current date forward for a provisionable
+number of months (see <a HREF="#TRACKING_MONTHS">Settings/Tracking Months</a>),
+to the end date.
+Past cash flows are not tracked, only forward cash flows.
+  <p>
+    Note: If the opening date of a cash account is prior to the current date,
+cash flow will be presented, in text mode, from the account opening date through
+the end date. However, graph mode is restricted to begin at the current date.
+  <p>Note: Past bond, loan and CD information is held for historical purposes and can be viewed from the Edit Menu
+  <p>
+    <a NAME="USING_APP"/a>
+    <h1>Using The Cash Flow Application</h1>
+    <h2>Create a Data File</h2>
+The first step in using this application is to create a data file to store
+you data. A data file is created using the <a HREF="#NEW_DATABASE">File/New Database File</a>
+ menu slection.
+Subsequently, you will open this data file using the
+<i>File/Open Database File</i>
+selection each time you want to use the application.
+    <h2>Create an Account</h2>
+Next you need to create at least one account. Accounts are created using the
+<i>Edit/Accounts</i> menu. You can add a checking account, savings, brokerage, etc.
+When you create an account, a corresponding cash account is created. The cash
+account holds the cash, the Account you created holds information about the account.
+  <p>When you create an account you can specify an Update Method. This method is
+used to process .csv files downloaded from the institution that holds the account to update your datafile.
+  <p>When creating an account, if the Update Method is other than "Manual", you
+will be asked if you want to specify a file to initialize the Account.
+If the Update Method is Fidelity Export, you will provide a .csv file
+containing portfolio positions on the start date. The account will be initialized based the content of this file. THIS SECTIONB NEEDS TO BE GENERALIZED, NOT SIMPLY ABOUT FIDELITY.
+<h2>Subsequent Use</h2>
+From there you can add bonds, loans, funds, etc to your account.
+<a NAME="FILE_MENU"/a>
+<h1>File Menu</h1>
+The following describes the entries in the File menu.
+<dl>
+  <a NAME="FILE_OPEN_DATABASE"/a>
+    <dt>Open Database File</dt>
+    <dd>Use this option to open an existing data file. The data
+      must have been previously created by this application.
+      Opening a second data file replaces all information
+      previously read in.
+    </dd>
+    <a NAME="NEW_DATABASE"/a>
+      <dt>New Database File</dt>
+      <dd>Create a new data file. The data file is used to store all user
+        information and settings. Creating a new data file replaces all
+        information previously read in. It does not affect the previously
+        active database if one was active.</dd>
+      <dt>Validate Data File</dt>
+      <dd>Use this function to verify a data file is proper and has a
+        valid data format</dd>
+</dl>
+Note 1: There is no explicit file save operation. All file save operations are performed automatically as required.
+<p>
+Note 2: Some screens have an 'Update' button. Depressing the button is required to save the changes applied in that screen.
+<p>
+Note 3: Data Files have an associated version. If an upgrade is required
+it will be performed automatically and a copy at the previsous version will be preserved.
+<a NAME="EDIT_MENU"/a>
+<h1>Editing Menu</h1>
+The following describes the entries in the Edit menu.
+<a NAME="EDIT_SETTINGS"/a>
+<h2>Settings</h2>        
+<A NAME="TRACKING_MONTHS" /A>            
+<dl>            
+  <dt>Tracking Months</dt>
+  <dd>The number of months cash flows will be tracked
+    from the current date.
+    A pull down is available with common choices but any
+    number of months could be entered.</dd>
+  <dt>Default Account</dt>
+  <dd>This is the account that the account pull down in the Quick Access Bar will default to.</dd>
+  <A NAME="ROWS_PER_PAGE">
+  <dt>Rows Per Page</dt>
+  <dd>This is the number of rows of information displayed in a windows
+    (e.g. the bond list window.</dd>
+  <dt>Graph Type</dt>
+  <dd>When in graph mode, the graph can be presented in either bar of line mode.
+</dl>
+<a NAME="EDIT_ACCOUNTS"/a>
+<h2>Accounts</h2>
+In this window you add or edit account information. An account is something
+you open with a bank, a brokerage firm or on-line. The account may be
+simply a checking or savings account or it may be a brokerage account.
+If its a brokerage account it may contain many additional financial
+instruments
+such as stock bonds and mutual funds. They will be entered elsewhere.
+This window is used to enter the top level account information only.
+<dl>
+  <dt>Account Name</dt>
+  <dd>The account nickname. In almost all cases, the nickname
+    is the used to refer to the account.</dd>
+  <dt>Account ID</dt>
+  <dd>The ID the bank or brokerage firm uses to identify the
+    account. This is useful when importing data from a bank
+    or brokerage account.</dd>
+  <dt>Account Type</dt>
+  <dd>Select an accoutn type from the pull-dowm.</dd>
+  <dt>Update Method</dt>
+  <dd>Account information may be updated via download from the
+    bank/institution or it may be provided manually. If account download
+    is supported, make the appropriate selection from the
+    pull down menu.</dd>
+</dl>
+Note: When an account is created a Cash Account is also automatically created.
+The cash account represents a sweep account for a brokerage account or simply the balance for a checking account.
+<a NAME="EDIT_CASH_ACCOUNTS"/a>
+<h2>Cash Accounts</h2>
+Cash accounts hold cash. They can represent a savings account balance,
+a checking account balance or a sweep account in a brokerage account.
+<p>
+  Cash accounts are automatically created when an account is created and
+  also deleted when the account is deleted. If you change the name of the
+  account (in the <a HREF="#EDIT_ACCOUNTS">Edit/Account</a> window)
+  the Cash Account Name will also change.
+<p>
+The following fields apply to cash accounts.
+<dl>
+  <dt>Account Name</dt>
+  <dd>The account this cash account is associated with.
+    The account name can't be changes here but,
+    if its changed in the Edit/Account window,
+    the change will appear here also.</dd>
+  <dt>Balance</dt>
+  <dd>Current cash balance of the account.
+  <dt>Rate</dt>
+  <dd>Current interest rate paid by the account</dd>
+  <dt>Interest Date</dt>
+  <dd>Date the interest is applied</dd>
+  <dt>Compound</dt>
+  <dd>How frequently the interest is applied</dd>
+</dl>
+<a NAME="EDIT_CDS"/a>
+  <h2>CDs</h2>
+<a NAME="EDIT_BONDS"/a>
+<h2>Bonds</h2>
+The bond list is a list of all bonds entered into the application. The bond
+list may be manually edited or data may be imported from the brokerage
+firm.
+<p>
+<h3>The Bond List Window Layout</h3>
+The bond list window is is divided into three frames:
+<ul>
+  <li>the bond filters at the top of the window
+  <li>the bond list in the center of the window and
+  <li>the control and status indicators at the bottom.
+    </ul>
+<h3>Filtering The Bond List</h3>
+When the bond list is first opened, all bonds entered in the application are
+displayed. The top portion of the window contains several filters that may
+be applied to the bond list. The filters are as follows:
+<dl>
+  <dt>Account</dt>
+  <dd>The account pull-down can be used limit the bonds displayed
+    to those purchased from a single account or all accounts.</dd>
+  <dt>Bond Status</dt>
+  <dd>The Bond Status pull-down can be used to limit the bonds
+    displayed as follows:
+    <ul>
+      <li>all : Bonds of all status
+      <li>active: Only show bonds still active. A bond is no longer
+        active if either it has matured or it has been called.
+      <li>closed:  Only show bonds no longer active.
+      <li>matured: Only show bonds whose maturity date has pasted.
+      <li>called:  Only show bonds that were called.
+    </ul>
+</dl>
+<h3>Bond Status and Control Frame</h3>
+The Status and Control Frame is located at the bottom of the bond list window.
+<h4>Status field</h4>
+The status section displays page information and is located on the left side of the status and control frame. If the full list of bonds can
+not be displayed in the window, page information is shown in status section
+of the frame.  The >> and << buttons are used to page forward and
+backward respectively.  The number of bonds displayed in the window is controlled by the <a HREF="#ROWS_PER_PAGE">Rows Per Page</a> setting.
+<h4>Control Field</h4>
+The control field is located on the right side of the status and control
+frame and contains the following buttons:
+<dl>
+  <dt>Import Bonds</dt>
+  <dd>Import bond information from a brokerage house.</dd>
+  <dt>New</dt>
+  <dd>Manually enter a new bond.</dd>
+  <dt>Update</dt>
+  <dd>Update the database with the changes made in the Bond List
+    Window. That is, if you make any changes to the entries in
+    the Bond List Window, you must Update. Failure to do so
+    results in all changes being lost.</dd>
+  <dt>Cancel</dt>
+  <dd>Discard all changes made in the Bond List Window</dd>
+</dl>
+<h4>Fields in the Bond List Frame</h4>
+The following fields can be manually edited:
+<dl>
+  <dt>Account Name</dt>
+  <dd>Name of account from which the bond was purchased.
+    An account from the pull-down may be selected. All accounts
+    specified in the <a HREF="#EDIT_ACCOUNTS">Accounts</a> window will appear in this
+    list.</dd>
+  <dt>Settlement Date</dt>
+  <dd>Settlement date per the brokerage house.</dd>
+  <dt>Price</dt>
+  <dd>Price paid for the bond. Per industry standard, $100
+    represents the par value of $1000 bond.</dd>
+  <dt>Quantity</dt>
+  <dd>Number of bonds purchased.</dd>
+  <dt>Coupon</dt>
+  <dd>Stated coupon for the bond.</dd>
+  <dt>Fees</dt>
+  <dd>Fees charged by the brokerage house for the bond purchase.</dd>
+  <dt>Maturity Date</dt>
+  <dd>Maturity date stated on the bond.</dd>
+  <dt>Pay Frequency</dt>
+  <dd>Frequency at which the bond pays interests.</dd>
+  <dt>CUSIP</dt>
+  <dd>Bond identifier used by the brokerage house.</dd>
+  <dt>Issuer</dt>
+  <dd>Stated issuer of the bond.</dd>
+</dl>
+<p>
+<a NAME="EDIT_FUNDS"/a>
+<h2>Funds</h2>
+<a NAME="EDIT_LOANS"/a>
+<h2>Loans</h2>
+<a NAME="EDIT_TRANSFERS"/a>
+<h2>Scheduled Transfers</h2>
+<a NAME="IMPORT_MENU"/a>
+<h1>Imports</h1>
+<a NAME="IMPORT_ACCOUNTS"/a>
+<h2>Accounts</h2>
+<a NAME="IMPORT_BONDS"/a>
+<h2>Bonds</h2>
+<a NAME="REPORTS_MENU"/a>
+<h1>Reports</h1>
+<a NAME="HELP_MENU"/a>
+<h1>Help</h1>
+<a NAME="HELP_ABOUT"/a>
+<h2>About</h2>
+Provides the release date and version of the cash flow application. 
+<a NAME="QUICK_ACCESS_BAR"/a>
+<h1>Quick Access Bar</h1>
+The quick access bar is at the top of the window just below the menu bar.
+<a NAME=""/a>
+<a NAME="QA_ACCOUNT_PULL_DOWN"/a>
+<h2>Account Pull Down</h2>
+<a NAME="QA_TEXT_GRAPH"/a>
+<h2>Text / Graph</h2>
+Text / Graph Mode Selection Help
+<a NAME="QA_GRANULARITY"/a>
+<h2>Granularity</h2>
+<a NAME="QA_DATE_RANGE"/a>
+<h2>Date Range</h2>
+In graph mode, a graph of cash flows is presented for the date range
+defined by the 'Date Range' button. The default values for the Date Range
+are: the current date through the period defined by the Tracking Months.
+For example, if the current date is Jan 1, 2018 and Tracking Months is provisioned for 24 months, the start date is Jan 1, 2018 and the end date is
+Jan 1, 2020.
+<p>
+The graphs presentation can get very 'busy', especially if the Tracking Months
+are provisioned to a large number of months. The amount of data shown on the
+graph can be reduced via the Date Range button.
+ <p>
+ The start date can neither precede the current date nor be equal to or follow the end date.
+ The end date must be after the start date and can not exceed the end period defined by the Tracking Months.
+</body>
+</html>

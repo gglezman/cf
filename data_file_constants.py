@@ -17,7 +17,10 @@ import platform
 # Some useful constants
 #################################
 # The following software version should be updated with every release
-SW_VERSION = "2.1"
+SW_VERSION = "2.2"
+SW_RELEASE_DATE = "01/20/22"
+
+HELP_FILE_NAME = "help.html"
 
 # Field widths for display widgets
 if platform.system() == 'Linux':
